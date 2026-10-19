@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paie Slovaquie</title>
+<style>
+  :root { --g: #006233; --g2: #00843d; --r: #d21034; --ink: #1f2a24; --mut: #5d6b63; --line: #d7dfda; --bg: #eef2ef; --card: #fff; --soft: #f1f5f2; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 13.5px/1.45 Arial, Helvetica, sans-serif; }
+  #bar { position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, var(--g) 0%, var(--g) 70%, var(--g2) 100%); color: #fff; border-bottom: 4px solid var(--r);
+         padding: 8px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  #bar b.t { font-size: 15px; margin-right: 6px; }
+  #bar label { display: inline-flex; align-items: center; gap: 5px; }
+  #bar input, #bar select { padding: 4px 6px; border: 0; border-radius: 3px; font: 13px Arial, sans-serif; }
+  #bar button { background: #fff; color: var(--g); border: 0; border-radius: 4px; padding: 6px 11px; font-weight: bold; font-size: 13px; cursor: pointer; }
+  #bar button.pri { background: var(--r); color: #fff; }
+  #bar .grp { display: inline-flex; gap: 6px; align-items: center; padding-left: 12px; border-left: 1px solid rgba(255,255,255,.35); }
+  #tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 14px 0; max-width: 1400px; margin: 0 auto; }
+  #tabs button { background: #dfe7e2; color: var(--g); border: 1px solid #c3d3c9; border-bottom: 0; border-radius: 6px 6px 0 0; padding: 8px 14px; font: bold 13px Arial, sans-serif; cursor: pointer; }
+  #tabs button.on { background: var(--card); color: var(--ink); }
+  main { max-width: 1400px; margin: 0 auto; padding: 0 14px 30px; }
+  section.tab { display: none; background: var(--card); border: 1px solid #c3d3c9; border-radius: 0 6px 6px 6px; padding: 16px 18px; }
+  section.tab.on { display: block; }
+  h2 { margin: 0 0 4px; color: var(--g); font-size: 18px; }
+  h3 { margin: 18px 0 6px; color: var(--g); font-size: 14.5px; }
+  p.note, .note { color: var(--mut); font-size: 12.5px; margin: 4px 0 10px; }
+  .warn { background: #fff4d6; border: 1px solid #f0d58a; color: #6b4b00; border-radius: 6px; padding: 8px 11px; margin: 8px 0; font-size: 12.5px; }
+  .bad { background: #fde3e6; border: 1px solid #f0b8c2; color: #8a1023; border-radius: 6px; padding: 8px 11px; margin: 8px 0; font-size: 12.5px; }
+  .ok { background: #e9f5ee; border: 1px solid #b9d3c3; color: #0b6b35; border-radius: 6px; padding: 8px 11px; margin: 8px 0; font-size: 12.5px; }
+  button.b { background: var(--soft); color: var(--g); border: 1px solid #b9d3c3; border-radius: 4px; padding: 6px 11px; font: bold 12.5px Arial, sans-serif; cursor: pointer; }
+  button.b.pri { background: var(--g); color: #fff; border-color: var(--g); }
+  button.b.danger { color: var(--r); border-color: #f0b8c2; background: #fff5f6; }
+  table.t { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  table.t th { background: var(--g); color: #fff; text-align: left; padding: 5px 6px; font-weight: bold; }
+  table.t td { border-bottom: 1px solid #e3e9e5; padding: 4px 6px; vertical-align: middle; }
+  table.t td.n, table.t th.n { text-align: right; white-space: nowrap; }
+  table.t tr.tot td { font-weight: bold; background: var(--soft); border-top: 2px solid var(--g); }
+  table.t input, table.t select { width: 100%; min-width: 48px; padding: 3px 4px; border: 1px solid #c3d0c8; border-radius: 3px; font: 12.5px Arial, sans-serif; }
+  table.t input.num { text-align: right; }
+  .scroll { overflow-x: auto; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 14px; }
+  .grid label, .fld { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--mut); font-weight: bold; }
+  .grid input, .grid select { padding: 5px 6px; border: 1px solid #bfcdc5; border-radius: 4px; font: 13px Arial, sans-serif; color: var(--ink); font-weight: normal; }
+  .grid label.chk { flex-direction: row; align-items: center; gap: 6px; color: var(--ink); font-weight: normal; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 10px 0; background: #fbfcfb; }
+  .kids .k { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+  .kids input { padding: 4px 6px; border: 1px solid #bfcdc5; border-radius: 4px; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 11px; font-weight: bold; background: #e6f1ea; color: var(--g); white-space: nowrap; }
+  .pill.r { background: #fde3e6; color: #8a1023; } .pill.y { background: #fff4d6; color: #6b4b00; } .pill.gr { background: #eceff1; color: #555; }
+  .sum { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 10px 0; }
+  .sum div { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .sum span { display: block; color: var(--mut); font-size: 11.5px; } .sum b { font-size: 16px; font-variant-numeric: tabular-nums; }
+  a { color: var(--g); }
+  /* payslip */
+  .slip { background: #fff; border: 1px solid #9fb3a7; width: 190mm; max-width: 100%; margin: 12px auto; padding: 8mm 9mm; font-size: 11px; line-height: 1.35; color: #000; break-inside: avoid; }
+  .slip h4 { margin: 0; font-size: 15px; color: var(--g); }
+  .slip .hd { display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--g); padding-bottom: 6px; margin-bottom: 6px; }
+  .slip .who { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; margin-bottom: 6px; }
+  .slip table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .slip td { padding: 1.6px 4px; border-bottom: 1px dotted #c9d4cd; }
+  .slip td.n { text-align: right; white-space: nowrap; }
+  .slip tr.h td { background: #e6f1ea; font-weight: bold; color: var(--g); border-bottom: 1px solid var(--g); }
+  .slip tr.s td { font-weight: bold; }
+  .slip tr.net td { font-size: 13px; font-weight: bold; background: #fff3c4; border-top: 2px solid #000; }
+  .slip .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .slip .sk { color: #555; font-style: italic; }
+  .slip .ft { margin-top: 6px; color: #444; font-size: 9.5px; }
+  @media print {
+    @page { size: A4 portrait; margin: 8mm; }
+    html, body { background: #fff; }
+    #bar, #tabs, section.tab:not(#tab-fiches), #tab-fiches .noprint { display: none !important; }
+    section.tab { border: 0; padding: 0; display: block !important; }
+    .slip { border: 0; margin: 0 auto; page-break-after: always; break-after: page; width: auto; }
+    .slip:last-child { page-break-after: auto; break-after: auto; }
+    body.printDecl section.tab { display: none !important; }
+    body.printDecl #tab-decl { display: block !important; }
+    body.printDecl #tab-decl .noprint { display: none !important; }
+  }
+  @media (max-width: 700px) { .slip .cols, .slip .who { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="bar">
+  <b class="t">🇸🇰 Paie Slovaquie</b>
+  <label>Mois <select id="pMonth"></select></label>
+  <label>Année <input type="number" id="pYear" min="2026" max="2099" style="width:76px"></label>
+  <label title="Jour de versement des salaires de ce mois : il fixe les échéances des cotisations">Date de paie <input type="date" id="pPay"></label>
+  <span class="grp">
+    <button onclick="saveFile()">💾 Enregistrer</button>
+    <button onclick="document.getElementById('openf').click()">📂 Ouvrir</button>
+    <input type="file" id="openf" accept=".json" hidden>
+    <button onclick="exportCSV()">📤 CSV du mois</button>
+  </span>
+  <span class="grp"><button class="pri" onclick="printSlips()">🖨 Imprimer les fiches</button></span>
+  <span id="saved" style="margin-left:auto;font-size:12px;opacity:.9"></span>
+</div>
+<nav id="tabs">
+  <button data-t="emp" class="on">👥 Employés</button>
+  <button data-t="paie">🧮 Paie du mois</button>
+  <button data-t="fiches">📄 Fiches de paie</button>
+  <button data-t="decl">🏛 Déclarations et échéances</button>
+  <button data-t="annee">📊 Récapitulatif annuel</button>
+  <button data-t="param">⚙ Paramètres et sources</button>
+</nav>
+<main>
+<section class="tab on" id="tab-emp">
+  <h2>Employés</h2>
+  <p class="note">Les données restent sur cet ordinateur (navigateur). Pensez à « Enregistrer » régulièrement pour garder une copie dans un fichier.</p>
+  <div class="card">
+    <h3 style="margin-top:0">Employeur (zamestnávateľ)</h3>
+    <div class="grid" id="employerForm"></div>
+  </div>
+  <div class="row"><button class="b pri" onclick="editEmp(null)">➕ Ajouter un employé</button></div>
+  <div class="scroll"><table class="t" id="empTable"></table></div>
+  <div id="empEdit"></div>
+</section>
+
+<section class="tab" id="tab-paie">
+  <h2>Paie du mois <span id="paieTitle"></span></h2>
+  <p class="note" id="paieInfo"></p>
+  <div id="paieWarn"></div>
+  <div class="scroll"><table class="t" id="paieTable"></table></div>
+  <h3>Résultats</h3>
+  <div class="scroll"><table class="t" id="resTable"></table></div>
+</section>
+
+<section class="tab" id="tab-fiches">
+  <div class="noprint">
+    <h2>Fiches de paie (výplatná páska)</h2>
+    <div class="row"><label class="fld" style="flex-direction:row;align-items:center;gap:6px">Employé
+      <select id="slipWho" style="padding:4px"></select></label>
+      <button class="b pri" onclick="printSlips()">🖨 Imprimer</button></div>
+  </div>
+  <div id="slips"></div>
+</section>
+
+<section class="tab" id="tab-decl">
+  <h2>Déclarations et paiements à l'État <span id="declTitle"></span></h2>
+  <p class="note noprint">Montants calculés à partir de la paie du mois. Les échéances suivent la date de paie choisie en haut. Cochez chaque démarche une fois faite.</p>
+  <div class="row noprint"><button class="b" onclick="printDecl()">🖨 Imprimer ce récapitulatif</button></div>
+  <div id="declBody"></div>
+</section>
+
+<section class="tab" id="tab-annee">
+  <h2>Récapitulatif annuel <span id="anTitle"></span></h2>
+  <p class="note">Somme des mois calculés de l'année : base du certificat de revenus (potvrdenie o zdaniteľných príjmoch), de la régularisation annuelle (ročné zúčtovanie) et du rapport annuel (hlásenie).</p>
+  <div class="scroll"><table class="t" id="anTable"></table></div>
+  <div id="anDue"></div>
+</section>
+
+<section class="tab" id="tab-param">
+  <h2>Paramètres légaux <span id="parTitle"></span></h2>
+  <div class="warn">Les montants ci-dessous sont ceux de 2026, relevés en octobre 2026 dans des sources publiques (liste en bas). Ils changent souvent : vérifiez-les auprès de la Sociálna poisťovňa, des caisses de santé et de la Finančná správa, et corrigez-les ici si besoin. Pour une autre année, tous les montants doivent être mis à jour.</div>
+  <div class="row"><button class="b" onclick="resetParams()">↺ Revenir aux valeurs 2026</button></div>
+  <div id="parBody"></div>
+  <h3>Sources</h3>
+  <ul class="note" id="srcList"></ul>
+</section>
+</main>
+
+<script>
+// ===================== 2026 legal parameters (editable in the Paramètres tab) =====================
+const P2026 = {
+  year: 2026,
+  minWage: 915, minHour: 5.259,                         // minimálna mzda (mesačná / hodinová)
+  maxVZ: 16764,                                         // maximálny mesačný vymeriavací základ, sociálne poistenie
+  ee: {nem: 1.4, star: 4, inv: 3, nez: 1},              // zamestnanec, sociálne poistenie (%)
+  er: {nem: 1.4, star: 14, inv: 3, nez: 0.5, skp: 0.5, gar: 0.25, ur: 0.8, rez: 4.75},   // zamestnávateľ (%)
+  dss: 4,                                               // II. pilier, časť starobného poistenia zamestnávateľa (%)
+  hEe: 5, hEr: 11, hEeZtp: 2.5, hErZtp: 5.5,            // zdravotné poistenie (%)
+  tax: {b1: 3665.28, b2: 5029.10, b3: 6250.86, r1: 19, r2: 25, r3: 30, r4: 35},          // mesačné pásma preddavku
+  nczd: {full: 497.23, limit: 2173.59, k: 1221.76, div: 3},                              // NČZD mesačne: k − ZD/div nad limit
+  bonus: {u15: 100, u18: 50, limit: 2286, cut: 10, pct: [29, 36, 43, 50, 57, 64]},
+  pn: {d1: 25, d4: 55, days: 14, maxDvz: 100.2083},     // náhrada príjmu pri PN
+  sur: {ot: 25, night: 40, sat: 50, sun: 100, hol: 100},// príplatky (%): nadčas a sviatok z priem. zárobku, ostatné z min. hodinovej mzdy
+  meal: {ticket: 6.98, share: 55, maxTicket: 9.30},     // stravné lístky / finančný príspevok
+  holidays: ['01-01', '01-06', '04-03', '04-06', '05-01', '07-05', '08-29', '11-01', '12-24', '12-25', '12-26']
+};
+const SOURCES = [
+  ['Sociálna poisťovňa – tabuľky platenia poistného od 1. 1. 2026', 'https://www.socpoist.sk/socialne-poistenie/platenie-poistneho/tabulky-platenia-poistneho/tabulky-platenia-poistneho-od-1-6'],
+  ['Sociálna poisťovňa – sadzba II. piliera v roku 2026 zostáva 4 %', 'https://www.socpoist.sk/news/sadzba-prispevkov-do-ii-dochodkoveho-piliera-v-roku-2026-zostava-na-urovni-4-spori-si-v-nom-uz'],
+  ['Sociálna poisťovňa – zrušenie ELDP od roku 2026', 'https://www.socpoist.sk/news/povinnost-zamestnavatelov-predkladat-evidencne-listy-dochodkoveho-poistenia-sa-od-roku-2026'],
+  ['Sociálna poisťovňa – Výkaz poistného a príspevkov (VPP) od 01/2026', 'https://www.socpoist.sk/node/6916'],
+  ['Podnikajte.sk – Odvody zamestnanca a zamestnávateľa od 1. 1. 2026', 'https://www.podnikajte.sk/socialne-a-zdravotne-odvody/odvody-zamestnanca-zamestnavatela-od-2026'],
+  ['Mzdové centrum – Odvody poistného od 1. januára 2026', 'https://www.mzdovecentrum.sk/clanok-z-titulky/odvody-poistneho-od-1-januara-2026-2.htm'],
+  ['Podnikajte.sk – Dôležité čísla pre daňové priznanie FO za rok 2026', 'https://www.podnikajte.sk/dan-z-prijmov/dolezite-cisla-pre-danove-priznanie-fyzickej-osoby-za-rok-2026'],
+  ['Účtovník24 – Sadzby dane z príjmov FO 2026: 19, 25, 30 a 35 %', 'https://uctovnik24.com/sk/blog/sadzby-dane-z-prijmov-fyzickych-osob-2026/'],
+  ['Finsider – Daňový bonus na dieťa 2026', 'https://www.finsider.sk/servis/danovy-bonus-na-dieta-2026-2/'],
+  ['Matea – Vymeriavacie základy 2026', 'https://matea.sk/2025/12/14/nove-minimalne-a-maximalne-vymeriavacie-zaklady-pre-platenie-poistneho/'],
+  ['Finsider – Príplatky za prácu 2026', 'https://www.finsider.sk/servis/priplatky-za-pracu-2026/'],
+  ['Podnikajte.sk – Stravné v roku 2026', 'https://www.podnikajte.sk/stravne-a-pracovne-cesty/stravne-2026-tabulka'],
+  ['Aksamec – PN 2026: náhrada 25 % a 55 %, 14 dní', 'https://www.aksamec.sk/praceneschopnost-pn-2026/'],
+  ['Finančná správa – Prehľad o zrazených preddavkoch (PREHLADv26)', 'https://pfseform.financnasprava.sk/Formulare/eFormVzor/INE/form.624.html'],
+  ['Finančná správa – Podávanie mesačných prehľadov', 'https://podpora.financnasprava.sk/879943-Pod%C3%A1vanie-mesa%C4%8Dn%C3%BDch-preh%C4%BEadov'],
+  ['VšZP – Výkaz preddavkov na poistné (zamestnávatelia)', 'https://www.vszp.sk/platitelia/tlaciva/vykaz-preddavkov-zamestnavatela/'],
+  ['KROS – Deň určený na výplatu miezd z pohľadu poisťovní', 'https://www.kros.sk/blog/den-urceny-na-vyplatu-miezd-z-pohladu-socialnej-poistovne-a-zdravotnych-poistovni/'],
+  ['EURAXESS – zdravotné poistenie (zamestnávateľ s diplomatickými výsadami)', 'https://www.euraxess.sk/sk/slovakia/pobyt-v-zahranici/zdravotne-poistenie'],
+  ['Konsolidácia 2026 a sviatky (8. 5., 15. 9., 17. 11. nie sú dňami pracovného pokoja)', 'https://www.fakturaonline.sk/podnikatelov-sprievodca/pravne-aspekty-podnikania/aktuality/zmeny-statnych-sviatkov-2026-2027-tieto-dni-uz-nebudu-pracovnym-pokojom']
+];
+const INSURERS = {'25': 'Všeobecná zdravotná poisťovňa (VšZP)', '24': 'DÔVERA zdravotná poisťovňa', '27': 'Union zdravotná poisťovňa'};
+const PENS = {none: 'Aucune pension', old: 'Retraite de vieillesse (starobný dôchodok)', early: 'Retraite anticipée (predčasný starobný)', inv: 'Invalidité ≤ 70 % (invalidný)', inv70: 'Invalidité > 70 % (invalidný)'};
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const MONTHS_SK = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'júl', 'august', 'september', 'október', 'november', 'december'];
+
+// ===================== state =====================
+const KEY = 'paieSlovaquie';
+const clone = o => JSON.parse(JSON.stringify(o));
+let DB = {params: clone(P2026), employer: {name: '', addr: '', ico: '', dic: '', sp: '', bank: ''}, employees: [], periods: {}};
+let CUR = {y: 2026, m: 1};
+const $ = id => document.getElementById(id);
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const fmt = v => isFinite(v) ? new Intl.NumberFormat('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(v) : '';
+const eur = v => fmt(v) + ' €';
+const num = s => { if (typeof s === 'number') return s; s = String(s == null ? '' : s).replace(/[\s  ]/g, '').replace(',', '.'); const v = parseFloat(s); return isFinite(v) ? v : 0; };
+const floor2 = v => Math.floor(v * 100 + 1e-6) / 100 || 0;           // poistné, preddavky: na eurocenty nadol
+const ceil2 = v => Math.ceil(v * 100 - 1e-6) / 100 || 0;             // náhrada príjmu, daňový bonus: nahor
+const round2 = v => Math.round(v * 100) / 100;
+const pkey = () => `${CUR.y}-${String(CUR.m).padStart(2, '0')}`;
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(DB)); $('saved').textContent = '✓ Sauvegardé dans le navigateur à ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}); }
+  catch (e) { $('saved').textContent = '⚠ Sauvegarde impossible : enregistrez dans un fichier'; }
+}
+function load() {
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); DB = {...DB, ...d, params: {...clone(P2026), ...(d.params || {})}}; } } catch (e) {}
+}
+function saveFile() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(DB, null, 1)], {type: 'application/json'}));
+  a.download = `Paie_Slovaquie_${pkey()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('openf').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { try { const d = JSON.parse(t); if (!d.employees) throw 0; DB = {...DB, ...d, params: {...clone(P2026), ...(d.params || {})}}; save(); renderAll(); alert('Fichier ouvert.'); } catch (x) { alert('Fichier non valide.'); } });
+  e.target.value = '';
+};
+
+// ===================== calendar =====================
+function easter(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mo - 1, da);
+}
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function holidaySet(y) {
+  const s = new Set((DB.params.holidays || []).map(md => `${y}-${md}`));
+  if (y !== 2026) {                                      // Easter moves every year: recompute Good Friday and Easter Monday
+    const e = easter(y), gf = new Date(e), em = new Date(e); gf.setDate(e.getDate() - 2); em.setDate(e.getDate() + 1);
+    ['04-03', '04-06'].forEach(md => s.delete(`${y}-${md}`)); s.add(iso(gf)); s.add(iso(em));
+  }
+  return s;
+}
+function monthCal(y, m) {
+  const hs = holidaySet(y), days = new Date(y, m, 0).getDate(), out = {days, wd: 0, hol: 0, list: []};
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(y, m - 1, d), w = dt.getDay(), weekday = w >= 1 && w <= 5, h = hs.has(iso(dt));
+    if (weekday) { out.wd++; if (h) out.hol++; }
+    out.list.push({d, dt, weekday, hol: h});
+  }
+  return out;                                            // wd = Monday-Friday days (holidays included), hol = holidays on Monday-Friday
+}
+function nextWorkday(d) { const hs = holidaySet(d.getFullYear()); const x = new Date(d); while (x.getDay() === 0 || x.getDay() === 6 || hs.has(iso(x))) x.setDate(x.getDate() + 1); return x; }
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const fdate = d => d ? d.toLocaleDateString('fr-FR', {weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
+const parseISO = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+
+// ===================== employees =====================
+function blankEmp() {
+  return {id: newId(), name: '', addr: '', rc: '', birth: '', job: '', start: '', end: '', iban: '', payType: 'month', salary: 915, rate: 0, hours: 40,
+    insurer: '25', dss: false, pension: 'none', ztp: false, social: true, health: true, taxWithheld: true, nczd: true, children: [],
+    avgHour: 0, dvz: 0, meal: 'none', ticket: 0, active: true};
+}
+function renderEmployer() {
+  const e = DB.employer, f = (k, l, ph) => `<label>${l}<input data-er="${k}" value="${esc(e[k])}" placeholder="${ph || ''}"></label>`;
+  $('employerForm').innerHTML = f('name', 'Nom', 'Ambassade …') + f('addr', 'Adresse', 'Rue, PSČ, Bratislava') + f('ico', 'IČO / identifiant') + f('dic', 'DIČ (n° fiscal)') +
+    f('sp', 'Variabilný symbol Sociálna poisťovňa') + f('bank', 'IBAN de l\'employeur');
+  $('employerForm').querySelectorAll('input').forEach(i => i.oninput = () => { DB.employer[i.dataset.er] = i.value; save(); });
+}
+function renderEmpTable() {
+  const rows = DB.employees.map(e => `<tr><td><b>${esc(e.name) || '<i>sans nom</i>'}</b><br><span class="note">${esc(e.job)}</span></td>
+    <td>${e.payType === 'month' ? eur(e.salary) + ' / mois' : eur(e.rate) + ' / h'}<br><span class="note">${e.hours} h / semaine</span></td>
+    <td>${esc(INSURERS[e.insurer] || '')}</td>
+    <td>${e.dss ? '<span class="pill">II. pilier</span> ' : ''}${e.pension !== 'none' ? `<span class="pill y">${esc(PENS[e.pension])}</span> ` : ''}${e.ztp ? '<span class="pill y">ZŤP</span> ' : ''}
+      ${!e.social ? '<span class="pill r">sans cotis. sociales</span> ' : ''}${!e.health ? '<span class="pill r">sans assurance santé</span> ' : ''}${!e.taxWithheld ? '<span class="pill r">impôt non retenu</span> ' : ''}
+      ${e.children.length ? `<span class="pill gr">${e.children.length} enfant(s)</span>` : ''}${e.active ? '' : ' <span class="pill gr">sorti</span>'}</td>
+    <td><button class="b" onclick="editEmp('${e.id}')">✏ Modifier</button> <button class="b danger" onclick="delEmp('${e.id}')">🗑</button></td></tr>`).join('');
+  $('empTable').innerHTML = `<tr><th>Employé</th><th>Salaire</th><th>Caisse santé</th><th>Situation</th><th></th></tr>` + (rows || '<tr><td colspan="5" class="note">Aucun employé : cliquez « Ajouter un employé ».</td></tr>');
+}
+function editEmp(id) {
+  const e = id ? DB.employees.find(x => x.id === id) : blankEmp();
+  const t = (k, l, type, extra) => `<label>${l}<input data-k="${k}" type="${type || 'text'}" value="${esc(e[k])}" ${extra || ''}></label>`;
+  const s = (k, l, opts) => `<label>${l}<select data-k="${k}">${Object.entries(opts).map(([v, n]) => `<option value="${v}"${String(e[k]) === v ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
+  const c = (k, l) => `<label class="chk"><input type="checkbox" data-k="${k}"${e[k] ? ' checked' : ''}> ${l}</label>`;
+  $('empEdit').innerHTML = `<div class="card"><h3 style="margin-top:0">${id ? 'Modifier' : 'Nouvel employé'}</h3>
+    <div class="grid">${t('name', 'Nom et prénom')}${t('rc', 'Rodné číslo')}${t('birth', 'Date de naissance', 'date')}${t('addr', 'Adresse')}
+      ${t('job', 'Poste')}${t('start', 'Date d\'entrée', 'date')}${t('end', 'Date de sortie', 'date')}${t('iban', 'IBAN')}</div>
+    <h3>Contrat et salaire</h3>
+    <div class="grid">${s('payType', 'Type de salaire', {month: 'Salaire mensuel (mesačná mzda)', hour: 'Salaire horaire (hodinová mzda)'})}
+      ${t('salary', 'Salaire mensuel brut (€)', 'number', 'step="0.01"')}${t('rate', 'Taux horaire brut (€)', 'number', 'step="0.0001"')}
+      ${t('hours', 'Heures par semaine', 'number', 'step="0.5"')}
+      ${t('avgHour', 'Gain horaire moyen (priemerný zárobok, €/h)', 'number', 'step="0.0001" placeholder="calculé si vide"')}
+      ${t('dvz', 'Base journalière maladie DVZ (€)', 'number', 'step="0.0001" placeholder="estimée si vide"')}</div>
+    <p class="note">Le gain horaire moyen sert aux congés, heures supplémentaires et jours fériés ; il se calcule sur le trimestre précédent. La DVZ (denný vymeriavací základ) sert aux indemnités maladie : salaires soumis de l'année précédente ÷ nombre de jours. Laissés vides, ils sont estimés d'après le salaire.</p>
+    <h3>Assurances et impôt</h3>
+    <div class="grid">${s('insurer', 'Caisse d\'assurance santé', INSURERS)}${s('pension', 'Pension perçue', PENS)}
+      ${c('dss', 'Affilié au II. pilier (épargne retraite)')}${c('ztp', 'Personne handicapée ZŤP (taux santé réduits)')}
+      ${c('social', 'Soumis aux cotisations sociales (Sociálna poisťovňa)')}${c('health', 'Soumis à l\'assurance santé publique')}
+      ${c('taxWithheld', 'L\'employeur retient l\'impôt (platiteľ dane)')}${c('nczd', 'Déclaration signée pour l\'abattement (NČZD, vyhlásenie)')}
+      ${s('meal', 'Repas', {none: 'Aucun', ticket: 'Tickets restaurant (stravné lístky)', cash: 'Contribution financière (finančný príspevok)'})}
+      ${t('ticket', 'Valeur du ticket (€)', 'number', `step="0.01" placeholder="${DB.params.meal.ticket}"`)}
+      ${c('active', 'Employé actif')}</div>
+    <div class="warn">Ambassade : les employés d'un employeur qui a des privilèges diplomatiques ne relèvent pas de l'assurance santé publique slovaque (sauf accord), et le régime des cotisations sociales et de l'impôt peut différer (l'employé paie parfois lui-même). Faites confirmer le régime de chaque employé par la Sociálna poisťovňa, la caisse de santé et le Daňový úrad, puis réglez les trois cases ci-dessus.</div>
+    <h3>Enfants (bonus fiscal, daňový bonus)</h3>
+    <div class="kids" id="kids"></div>
+    <button class="b" onclick="addKid()">➕ Enfant</button>
+    <div class="row" style="margin-top:12px"><button class="b pri" id="empOk">✔ Enregistrer l'employé</button><button class="b" onclick="$('empEdit').innerHTML=''">Annuler</button></div></div>`;
+  window.KIDS = clone(e.children);
+  renderKids();
+  $('empOk').onclick = () => {
+    const box = $('empEdit');
+    box.querySelectorAll('[data-k]').forEach(i => { const k = i.dataset.k; e[k] = i.type === 'checkbox' ? i.checked : i.type === 'number' ? num(i.value) : i.value; });
+    e.children = KIDS.filter(k => k.birth);
+    if (!e.name.trim()) { alert('Indiquez le nom de l\'employé.'); return; }
+    if (!id) DB.employees.push(e);
+    save(); $('empEdit').innerHTML = ''; renderAll();
+  };
+  $('empEdit').scrollIntoView({behavior: 'smooth'});
+}
+function renderKids() {
+  $('kids').innerHTML = KIDS.map((k, i) => `<div class="k"><input placeholder="Prénom" value="${esc(k.name)}" oninput="KIDS[${i}].name=this.value">
+    <input type="date" value="${esc(k.birth)}" oninput="KIDS[${i}].birth=this.value"> <button class="b danger" onclick="KIDS.splice(${i},1);renderKids()">✕</button></div>`).join('') || '<p class="note">Aucun enfant déclaré.</p>';
+}
+function addKid() { KIDS.push({name: '', birth: ''}); renderKids(); }
+function delEmp(id) { const e = DB.employees.find(x => x.id === id); if (!confirm(`Supprimer ${e.name} et ses données de paie ?`)) return; DB.employees = DB.employees.filter(x => x.id !== id); save(); renderAll(); }
+
+// ===================== monthly inputs =====================
+const INFIELDS = [
+  ['vac', 'Congés (jours)', 'Dovolenka – pracovné dni'], ['unpaid', 'Absence non payée (jours)', 'Neplatené voľno – pracovné dni'],
+  ['pnFrom', 'Maladie du', 'PN od (date)'], ['pnTo', 'au', 'PN do (vide = encore en cours)'],
+  ['ot', 'Heures sup.', 'Nadčas – hodiny'], ['night', 'Nuit (h)', 'Nočná práca – hodiny'], ['sat', 'Samedi (h)', 'Sobota – hodiny'], ['sun', 'Dimanche (h)', 'Nedeľa – hodiny'],
+  ['holw', 'Férié travaillé (h)', 'Práca vo sviatok – hodiny'], ['bonus', 'Prime (€)', 'Odmena / prémia'], ['other', 'Autre brut (€)', 'Iný zdaniteľný príjem'],
+  ['mealDays', 'Jours repas', 'Počet dní nároku na stravu'], ['ded', 'Retenues (€)', 'Iné zrážky (záloha, exekúcia…)']
+];
+function inputs(e, pk) {
+  const p = DB.periods[pk || pkey()] || {}, i = (p.inputs || {})[e.id] || {};
+  return i;
+}
+function setInput(eid, k, v) {
+  const pk = pkey(); DB.periods[pk] = DB.periods[pk] || {inputs: {}, done: {}};
+  const P = DB.periods[pk]; P.inputs[eid] = P.inputs[eid] || {}; P.inputs[eid][k] = v;
+  save();
+}
+
+// ===================== the payroll calculation =====================
+function avgHourOf(e) {
+  if (e.avgHour > 0) return e.avgHour;
+  return e.payType === 'month' ? e.salary * 12 / (52 * e.hours) : e.rate;      // estimate: salary / hours of an average month
+}
+function dvzOf(e) {
+  const P = DB.params;
+  const est = e.payType === 'month' ? e.salary * 12 / 365 : e.rate * e.hours * 52 / 365;
+  return Math.min(e.dvz > 0 ? e.dvz : est, P.pn.maxDvz);
+}
+function ageAt(birth, d) { const b = parseISO(birth); if (!b) return 99; let a = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) a--; return a; }
+
+function calc(e, y, m, inp) {
+  const P = DB.params, cal = monthCal(y, m), first = new Date(y, m - 1, 1), last = new Date(y, m - 1, cal.days);
+  const r = {e, y, m, cal, lines: [], warn: []};
+  const dailyH = e.hours / 5, ah = avgHourOf(e);
+  // employment dates: days outside the contract are not paid
+  const st = parseISO(e.start), en = parseISO(e.end);
+  let outside = 0;
+  cal.list.forEach(x => { if (x.weekday && ((st && x.dt < st) || (en && x.dt > en))) outside++; });
+  // sick leave (PN): calendar days in this month and their rank in the sick period
+  const pf = parseISO(inp.pnFrom), pt = parseISO(inp.pnTo) || (pf ? last : null);
+  let pnWd = 0, pnDays = 0, pnEr = 0, pnSP = 0; const dvz = dvzOf(e), pnRows = [];
+  if (pf && pt && pt >= first && pf <= last) {
+    for (let d = new Date(Math.max(pf, first)); d <= pt && d <= last; d = addDays(d, 1)) {
+      const rank = Math.round((d - pf) / 864e5) + 1, info = cal.list[d.getDate() - 1];
+      pnDays++; if (info.weekday && !info.hol) pnWd++;
+      if (rank <= 3) pnEr += dvz * P.pn.d1 / 100; else if (rank <= P.pn.days) pnEr += dvz * P.pn.d4 / 100; else pnSP++;
+    }
+    pnEr = ceil2(pnEr);
+  }
+  r.pn = {days: pnDays, wd: pnWd, comp: pnEr, sp: pnSP, dvz};
+  const vac = num(inp.vac), unpaid = num(inp.unpaid);
+  const absent = vac + pnWd + unpaid + outside;
+  // salary for the time worked
+  let base = 0, holPay = 0, hourly;
+  if (e.payType === 'month') {
+    hourly = e.salary / (cal.wd * dailyH);
+    base = round2(e.salary * Math.max(0, cal.wd - absent) / cal.wd);
+    r.lines.push(['Salaire de base', 'Mzda za odpracovaný čas', `${e.salary.toFixed(2)} × ${Math.max(0, cal.wd - absent)}/${cal.wd} j`, base]);
+  } else {
+    hourly = e.rate;
+    const worked = Math.max(0, cal.wd - cal.hol - absent);
+    base = round2(e.rate * dailyH * worked);
+    r.lines.push(['Salaire des heures travaillées', 'Mzda za odpracované hodiny', `${round2(worked * dailyH)} h × ${e.rate}`, base]);
+    if (cal.hol) { holPay = round2(cal.hol * dailyH * ah); r.lines.push(['Jours fériés (indemnité)', 'Náhrada mzdy za sviatok', `${cal.hol * dailyH} h × ${ah.toFixed(4)}`, holPay]); }
+  }
+  const vacPay = round2(vac * dailyH * ah);
+  if (vac) r.lines.push(['Congés payés', 'Náhrada mzdy za dovolenku', `${vac * dailyH} h × ${ah.toFixed(4)}`, vacPay]);
+  const ot = num(inp.ot), otPay = round2(ot * (hourly + ah * P.sur.ot / 100));
+  if (ot) r.lines.push(['Heures supplémentaires', 'Mzda + príplatok za nadčas', `${ot} h × (${hourly.toFixed(4)} + ${P.sur.ot} %)`, otPay]);
+  const sur = (k, l, sk, pct, rate) => { const h = num(inp[k]); if (!h) return 0; const v = round2(h * rate * pct / 100); r.lines.push([l, sk, `${h} h × ${pct} % × ${rate.toFixed(4)}`, v]); return v; };
+  const sNight = sur('night', 'Majoration de nuit', 'Príplatok za nočnú prácu', P.sur.night, P.minHour);
+  const sSat = sur('sat', 'Majoration samedi', 'Príplatok za prácu v sobotu', P.sur.sat, P.minHour);
+  const sSun = sur('sun', 'Majoration dimanche', 'Príplatok za prácu v nedeľu', P.sur.sun, P.minHour);
+  const sHol = sur('holw', 'Majoration jour férié', 'Príplatok za prácu vo sviatok', P.sur.hol, ah);
+  const bonus = num(inp.bonus), other = num(inp.other);
+  if (bonus) r.lines.push(['Prime', 'Odmena', '', bonus]);
+  if (other) r.lines.push(['Autre revenu brut', 'Iný príjem', '', other]);
+  const gross = round2(base + holPay + vacPay + otPay + sNight + sSat + sSun + sHol + bonus + other);
+  r.gross = gross;
+  if (pnEr) r.lines.push(['Indemnité maladie (employeur)', 'Náhrada príjmu pri PN', `${pnDays} j, DVZ ${dvz.toFixed(4)}`, pnEr]);
+  // minimum wage check
+  const minDue = P.minWage * e.hours / 40;
+  if (e.payType === 'month' && e.salary < minDue - 0.005) r.warn.push(`Salaire inférieur au salaire minimum (${eur(minDue)} pour ${e.hours} h/semaine).`);
+  if (e.payType === 'hour' && e.rate < P.minHour - 0.00005) r.warn.push(`Taux horaire inférieur au minimum (${P.minHour} €/h).`);
+  if (pnSP) r.warn.push(`${pnSP} jour(s) de maladie au-delà du ${P.pn.days}e jour : indemnités payées par la Sociálna poisťovňa (nemocenské), pas par l'employeur.`);
+  if (ah && !(e.avgHour > 0) && (vac || ot || num(inp.holw) || (e.payType === 'hour' && cal.hol))) r.warn.push('Gain horaire moyen estimé d\'après le salaire : indiquez le vrai priemerný zárobok dans la fiche de l\'employé.');
+  // assessment base (vymeriavací základ): gross pay; sick-leave compensation is not part of it
+  const vz = gross, vzS = Math.min(vz, P.maxVZ);
+  if (vz > P.maxVZ) r.warn.push(`Base sociale plafonnée à ${eur(P.maxVZ)}.`);
+  const pen = e.pension, noInv = pen === 'old' || pen === 'early', noNez = noInv || pen === 'inv70';
+  const ee = {}, er = {};
+  if (e.social) {
+    ee.nem = floor2(vzS * P.ee.nem / 100); ee.star = floor2(vzS * P.ee.star / 100);
+    ee.inv = noInv ? 0 : floor2(vzS * P.ee.inv / 100); ee.nez = noNez ? 0 : floor2(vzS * P.ee.nez / 100);
+    er.nem = floor2(vzS * P.er.nem / 100); er.star = floor2(vzS * P.er.star / 100);
+    er.dss = e.dss ? floor2(vzS * P.dss / 100) : 0; er.starI = round2(er.star - er.dss);
+    er.inv = noInv ? 0 : floor2(vzS * P.er.inv / 100); er.nez = noNez ? 0 : floor2(vzS * P.er.nez / 100); er.skp = noNez ? 0 : floor2(vzS * P.er.skp / 100);
+    er.gar = floor2(vzS * P.er.gar / 100); er.ur = floor2(vz * P.er.ur / 100); er.rez = floor2(vzS * P.er.rez / 100);
+  }
+  const eeS = round2(Object.values(ee).reduce((a, v) => a + v, 0));
+  const erS = round2(['nem', 'star', 'inv', 'nez', 'skp', 'gar', 'ur', 'rez'].reduce((a, k) => a + (er[k] || 0), 0));
+  const hEe = e.health ? floor2(vz * (e.ztp ? P.hEeZtp : P.hEe) / 100) : 0, hEr = e.health ? floor2(vz * (e.ztp ? P.hErZtp : P.hEr) / 100) : 0;
+  Object.assign(r, {vz, vzS, ee, er, eeS, erS, hEe, hEr});
+  // income tax advance (preddavok na daň)
+  const zd = round2(gross + pnEr - eeS - hEe);
+  let nczd = 0, adv = 0, bonusT = 0, kids = [];
+  if (e.taxWithheld) {
+    if (e.nczd) nczd = zd <= P.nczd.limit ? P.nczd.full : Math.max(0, round2(P.nczd.k - zd / P.nczd.div));
+    nczd = Math.min(nczd, zd);
+    const b = Math.max(0, zd - nczd), T = P.tax;
+    adv = floor2(Math.min(b, T.b1) * T.r1 / 100 + Math.max(0, Math.min(b, T.b2) - T.b1) * T.r2 / 100 + Math.max(0, Math.min(b, T.b3) - T.b2) * T.r3 / 100 + Math.max(0, b - T.b3) * T.r4 / 100);
+    // tax bonus for children, reduced above the income limit and capped at a share of the tax base
+    const B = P.bonus, cut = zd > B.limit ? (zd - B.limit) / B.cut : 0;
+    kids = e.children.map(k => { const a = ageAt(k.birth, first); const full = a < 15 ? B.u15 : a < 18 ? B.u18 : 0; return {name: k.name, age: a, full, v: Math.max(0, full - cut)}; }).filter(k => k.full);
+    const sumK = kids.reduce((a, k) => a + k.v, 0), cap = kids.length ? zd * B.pct[Math.min(kids.length, B.pct.length) - 1] / 100 : 0;
+    bonusT = ceil2(Math.min(sumK, cap));
+    if (kids.length && sumK > cap) r.warn.push(`Bonus enfants limité à ${B.pct[Math.min(kids.length, B.pct.length) - 1]} % de la base imposable.`);
+  }
+  Object.assign(r, {zd, nczd, adv, bonusT, kids});
+  // meals
+  const mealDays = inp.mealDays === undefined || inp.mealDays === '' ? Math.max(0, cal.wd - cal.hol - absent) : num(inp.mealDays);
+  const tv = e.ticket > 0 ? e.ticket : P.meal.ticket;
+  r.meal = {days: e.meal === 'none' ? 0 : mealDays, mode: e.meal, value: tv,
+    er: e.meal === 'none' ? 0 : round2(mealDays * round2(tv * P.meal.share / 100)), ee: e.meal === 'ticket' ? round2(mealDays * round2(tv * (100 - P.meal.share) / 100)) : 0};
+  if (e.meal !== 'none' && tv < P.meal.ticket) r.warn.push(`Valeur du ticket inférieure au minimum légal (${eur(P.meal.ticket)}).`);
+  const ded = num(inp.ded);
+  r.ded = ded;
+  r.net = round2(gross + pnEr - eeS - hEe - adv + bonusT - r.meal.ee - ded + (e.meal === 'cash' ? r.meal.er : 0));
+  r.cost = round2(gross + pnEr + erS + hEr + r.meal.er);
+  if (!e.taxWithheld) r.warn.push('Impôt non retenu par l\'employeur : l\'employé déclare lui-même ses revenus (daňové priznanie typ A ou B).');
+  return r;
+}
+function periodResults(y, m) {
+  const pk = `${y}-${String(m).padStart(2, '0')}`, first = new Date(y, m - 1, 1), last = new Date(y, m, 0);
+  return DB.employees.filter(e => {
+    const st = parseISO(e.start), en = parseISO(e.end);
+    return (!st || st <= last) && (!en || en >= first) && (e.active || (en && en >= first));
+  }).map(e => calc(e, y, m, inputs(e, pk)));
+}
+
+// ===================== monthly payroll tab =====================
+function renderPaie() {
+  const cal = monthCal(CUR.y, CUR.m);
+  $('paieTitle').textContent = `– ${MONTHS[CUR.m - 1]} ${CUR.y}`;
+  $('paieInfo').textContent = `${cal.wd} jours ouvrables (lundi–vendredi), dont ${cal.hol} jour(s) férié(s) chômé(s). Saisissez les absences et éléments variables ; tout est recalculé aussitôt.`;
+  const emps = periodResults(CUR.y, CUR.m).map(r => r.e);
+  if (!emps.length) { $('paieTable').innerHTML = '<tr><td class="note">Aucun employé actif ce mois-ci.</td></tr>'; $('resTable').innerHTML = ''; $('paieWarn').innerHTML = ''; return; }
+  $('paieTable').innerHTML = `<tr><th>Employé</th>${INFIELDS.map(f => `<th title="${esc(f[2])}">${esc(f[1])}</th>`).join('')}</tr>` +
+    emps.map(e => { const i = inputs(e); return `<tr><td><b>${esc(e.name)}</b></td>${INFIELDS.map(([k]) => {
+      const date = k === 'pnFrom' || k === 'pnTo';
+      return `<td><input class="${date ? '' : 'num'}" type="${date ? 'date' : 'text'}" inputmode="decimal" data-e="${e.id}" data-k="${k}" value="${esc(i[k] ?? '')}" ${k === 'mealDays' ? 'placeholder="auto"' : ''}></td>`; }).join('')}</tr>`; }).join('');
+  $('paieTable').querySelectorAll('input').forEach(inp => inp.onchange = () => { setInput(inp.dataset.e, inp.dataset.k, inp.value); renderResults(); });
+  renderResults();
+}
+function renderResults() {
+  const R = periodResults(CUR.y, CUR.m);
+  const T = k => round2(R.reduce((a, r) => a + (typeof k === 'function' ? k(r) : r[k]), 0));
+  $('resTable').innerHTML = `<tr><th>Employé</th><th class="n">Brut</th><th class="n">Ind. maladie</th><th class="n">Cotis. sociales sal.</th><th class="n">Santé sal.</th><th class="n">Base imposable</th>
+    <th class="n">Abattement</th><th class="n">Impôt</th><th class="n">Bonus enfants</th><th class="n">Net à payer</th><th class="n">Charges patron.</th><th class="n">Coût employeur</th></tr>` +
+    R.map(r => `<tr><td>${esc(r.e.name)}</td><td class="n">${fmt(r.gross)}</td><td class="n">${fmt(r.pn.comp)}</td><td class="n">${fmt(r.eeS)}</td><td class="n">${fmt(r.hEe)}</td>
+      <td class="n">${fmt(r.zd)}</td><td class="n">${fmt(r.nczd)}</td><td class="n">${fmt(r.adv)}</td><td class="n">${fmt(r.bonusT)}</td><td class="n"><b>${fmt(r.net)}</b></td>
+      <td class="n">${fmt(r.erS + r.hEr)}</td><td class="n">${fmt(r.cost)}</td></tr>`).join('') +
+    `<tr class="tot"><td>Total</td><td class="n">${fmt(T('gross'))}</td><td class="n">${fmt(T(r => r.pn.comp))}</td><td class="n">${fmt(T('eeS'))}</td><td class="n">${fmt(T('hEe'))}</td><td class="n">${fmt(T('zd'))}</td>
+      <td></td><td class="n">${fmt(T('adv'))}</td><td class="n">${fmt(T('bonusT'))}</td><td class="n">${fmt(T('net'))}</td><td class="n">${fmt(T(r => r.erS + r.hEr))}</td><td class="n">${fmt(T('cost'))}</td></tr>`;
+  const w = R.flatMap(r => r.warn.map(x => `<li><b>${esc(r.e.name)}</b> : ${esc(x)}</li>`));
+  $('paieWarn').innerHTML = w.length ? `<div class="warn"><b>À vérifier</b><ul style="margin:4px 0 0;padding-left:18px">${w.join('')}</ul></div>` : '';
+}
+
+// ===================== payslips =====================
+function slipHTML(r) {
+  const e = r.e, E = DB.employer, line = (fr, sk, base, v, neg) => `<tr><td>${fr} <span class="sk">${sk}</span>${base ? `<br><span class="sk">${esc(base)}</span>` : ''}</td><td class="n">${v === '' ? '' : (neg ? '− ' : '') + fmt(v)}</td></tr>`;
+  const P = DB.params, ee = r.ee, er = r.er;
+  const socRows = e.social ? [
+    ['Maladie', 'Nemocenské', P.ee.nem, ee.nem], ['Vieillesse', 'Starobné', P.ee.star, ee.star], ['Invalidité', 'Invalidné', P.ee.inv, ee.inv], ['Chômage', 'V nezamestnanosti', P.ee.nez, ee.nez]
+  ].map(([f, s, p, v]) => line(f, s, `${fmt(r.vzS)} × ${v ? p : 0} %`, v, true)).join('') : line('Non soumis aux cotisations sociales', '', '', '');
+  const erRows = e.social ? [
+    ['Maladie', 'Nemocenské', P.er.nem, er.nem], ['Vieillesse', 'Starobné', P.er.star, er.star], ['Invalidité', 'Invalidné', P.er.inv, er.inv], ['Chômage', 'V nezamestnanosti', P.er.nez, er.nez],
+    ['Chômage partiel', 'Podpora v čase skrátenej práce', P.er.skp, er.skp], ['Garantie', 'Garančné', P.er.gar, er.gar], ['Accident', 'Úrazové', P.er.ur, er.ur], ['Fonds de réserve', 'Rezervný fond', P.er.rez, er.rez]
+  ].map(([f, s, p, v]) => line(f, s, `${v ? p : 0} %`, v)).join('') : '';
+  return `<div class="slip">
+    <div class="hd"><div><h4>Fiche de paie · Výplatná páska</h4><b>${MONTHS[r.m - 1]} ${r.y}</b> <span class="sk">${MONTHS_SK[r.m - 1]} ${r.y}</span></div>
+      <div style="text-align:right"><b>${esc(E.name) || 'Employeur'}</b><br>${esc(E.addr)}<br>${E.ico ? 'IČO ' + esc(E.ico) : ''} ${E.dic ? '· DIČ ' + esc(E.dic) : ''}</div></div>
+    <div class="who"><div><b>${esc(e.name)}</b><br>${esc(e.addr)}</div><div>${e.rc ? 'Rodné číslo : ' + esc(e.rc) + '<br>' : ''}${esc(e.job)}${e.start ? ' · entrée ' + parseISO(e.start).toLocaleDateString('fr-FR') : ''}<br>
+      Santé : ${esc(INSURERS[e.insurer] || '')}${e.dss ? ' · II. pilier' : ''}</div></div>
+    <div class="who note"><div>Jours ouvrables du mois : ${r.cal.wd} (fériés ${r.cal.hol}) · ${e.payType === 'month' ? 'Salaire mensuel ' + eur(e.salary) : 'Taux horaire ' + eur(e.rate)}</div>
+      <div>Congés ${num(inputs(e, `${r.y}-${String(r.m).padStart(2, '0')}`).vac)} j · Maladie ${r.pn.days} j · Gain horaire moyen ${avgHourOf(e).toFixed(4)} €</div></div>
+    <div class="cols"><div><table>
+      <tr class="h"><td>Rémunération · Príjem</td><td class="n">€</td></tr>
+      ${r.lines.map(l => line(l[0], l[1], l[2], l[3])).join('')}
+      <tr class="s"><td>Salaire brut <span class="sk">Hrubá mzda</span></td><td class="n">${fmt(r.gross)}</td></tr>
+      <tr class="h"><td>Cotisations salariales · Odvody zamestnanca</td><td class="n"></td></tr>
+      ${socRows}
+      ${e.health ? line('Assurance santé', 'Zdravotné poistenie', `${fmt(r.vz)} × ${e.ztp ? P.hEeZtp : P.hEe} %`, r.hEe, true) : line('Hors assurance santé publique', '', '', '')}
+      <tr class="s"><td>Total cotisations <span class="sk">Odvody spolu</span></td><td class="n">− ${fmt(r.eeS + r.hEe)}</td></tr>
+    </table></div><div><table>
+      <tr class="h"><td>Impôt · Daň</td><td class="n">€</td></tr>
+      ${e.taxWithheld ? line('Base imposable', 'Základ dane', 'brut + ind. maladie − cotisations', r.zd) + line('Abattement personnel', 'NČZD', e.nczd ? 'déclaration signée' : 'non demandé', r.nczd) +
+        line('Acompte d\'impôt', 'Preddavok na daň', '19 / 25 / 30 / 35 %', r.adv, true) + line('Bonus enfants', 'Daňový bonus', r.kids.map(k => `${k.name || 'enfant'} (${k.age} ans)`).join(', '), r.bonusT)
+        : line('Impôt non retenu par l\'employeur', 'Daň neodvádza zamestnávateľ', 'déclaration personnelle', '')}
+      <tr class="h"><td>Autres · Ostatné</td><td class="n"></td></tr>
+      ${r.meal.mode === 'cash' ? line('Contribution repas', 'Finančný príspevok na stravovanie', `${r.meal.days} j`, r.meal.er) : ''}
+      ${r.meal.mode === 'ticket' ? line('Tickets restaurant, part salarié', 'Stravné lístky – podiel zamestnanca', `${r.meal.days} × ${fmt(r.meal.value)}`, r.meal.ee, true) : ''}
+      ${r.ded ? line('Autres retenues', 'Iné zrážky', '', r.ded, true) : ''}
+      <tr class="net"><td>Net à payer <span class="sk">Na výplatu</span></td><td class="n">${fmt(r.net)} €</td></tr>
+      ${e.iban ? `<tr><td colspan="2" class="sk">Virement sur ${esc(e.iban)}</td></tr>` : ''}
+      <tr class="h"><td>Charges patronales · Odvody zamestnávateľa</td><td class="n"></td></tr>
+      ${erRows}
+      ${e.health ? line('Assurance santé', 'Zdravotné poistenie', `${e.ztp ? P.hErZtp : P.hEr} %`, r.hEr) : ''}
+      ${r.meal.er && r.meal.mode === 'ticket' ? line('Tickets restaurant, part employeur', 'Stravné lístky – príspevok', '', r.meal.er) : ''}
+      <tr class="s"><td>Coût total employeur <span class="sk">Celková cena práce</span></td><td class="n">${fmt(r.cost)}</td></tr>
+    </table></div></div>
+    <div class="ft">Base sociale ${fmt(r.vzS)} € (plafond ${fmt(P.maxVZ)} €)${e.dss ? ` · dont II. pilier ${fmt(er.dss || 0)} € versés à la société de gestion via la Sociálna poisťovňa` : ''}. Paramètres légaux ${P.year}. Document établi le ${new Date().toLocaleDateString('fr-FR')}.</div>
+  </div>`;
+}
+function renderSlips() {
+  const R = periodResults(CUR.y, CUR.m);
+  const sel = $('slipWho'), cur = sel.value;
+  sel.innerHTML = '<option value="">Tous les employés</option>' + R.map(r => `<option value="${r.e.id}">${esc(r.e.name)}</option>`).join('');
+  sel.value = R.some(r => r.e.id === cur) ? cur : '';
+  const list = sel.value ? R.filter(r => r.e.id === sel.value) : R;
+  $('slips').innerHTML = list.map(slipHTML).join('') || '<p class="note">Aucun employé ce mois-ci.</p>';
+}
+$('slipWho').onchange = renderSlips;
+function printSlips() { showTab('fiches'); setTimeout(() => window.print(), 50); }
+
+// ===================== declarations and deadlines =====================
+function renderDecl() {
+  const R = periodResults(CUR.y, CUR.m), pk = pkey(), P = DB.periods[pk] || {inputs: {}, done: {}}; P.done = P.done || {};
+  $('declTitle').textContent = `– salaires de ${MONTHS[CUR.m - 1]} ${CUR.y}`;
+  const pay = parseISO($('pPay').value);
+  const S = k => round2(R.reduce((a, r) => a + k(r), 0));
+  const due = pay ? nextWorkday(pay) : null;
+  const eeT = k => S(r => r.ee[k] || 0), erT = k => S(r => r.er[k] || 0);
+  const spEe = S(r => r.eeS), spEr = S(r => r.erS), dss = erT('dss');
+  const byIns = {};
+  R.filter(r => r.e.health).forEach(r => { const b = byIns[r.e.insurer] || (byIns[r.e.insurer] = {ee: 0, er: 0, n: 0}); b.ee = round2(b.ee + r.hEe); b.er = round2(b.er + r.hEr); b.n++; });
+  const adv = S(r => r.adv), bon = S(r => r.bonusT), taxNet = round2(adv - bon);
+  const endNext = new Date(CUR.y, CUR.m + 1, 0);
+  const chk = (id, txt, when, amount, how) => `<tr><td><input type="checkbox" data-done="${id}"${P.done[id] ? ' checked' : ''}></td><td>${txt}</td><td>${when ? fdate(when) : '<span class="pill r">date de paie ?</span>'}</td><td class="n">${amount === '' ? '' : eur(amount)}</td><td class="note">${how}</td></tr>`;
+  const tbl = rows => `<div class="scroll"><table class="t"><tr><th style="width:30px">✓</th><th>Démarche</th><th>Échéance</th><th class="n">Montant</th><th>Comment</th></tr>${rows}</table></div>`;
+  const funds = [['Maladie', 'nem'], ['Vieillesse (I. pilier)', 'star'], ['Invalidité', 'inv'], ['Chômage', 'nez']];
+  let h = `<div class="sum"><div><span>Salaires nets à verser</span><b>${eur(S(r => r.net))}</b></div><div><span>Sociálna poisťovňa</span><b>${eur(round2(spEe + spEr))}</b></div>
+    <div><span>Caisses de santé</span><b>${eur(round2(Object.values(byIns).reduce((a, b) => a + b.ee + b.er, 0)))}</b></div><div><span>Daňový úrad (impôt − bonus)</span><b>${eur(taxNet)}</b></div>
+    <div><span>Coût total employeur</span><b>${eur(S(r => r.cost))}</b></div></div>`;
+  if (!pay) h += '<div class="bad">Indiquez la date de paie (en haut) : les cotisations sont dues le jour du versement des salaires.</div>';
+  h += `<h3>1 · Sociálna poisťovňa (assurance sociale)</h3>
+    <div class="scroll"><table class="t"><tr><th>Fonds</th><th class="n">Part salariale</th><th class="n">Part patronale</th><th class="n">Total</th></tr>
+    ${funds.map(([l, k]) => `<tr><td>${l}</td><td class="n">${fmt(eeT(k))}</td><td class="n">${fmt(k === 'star' ? S(r => r.er.starI || 0) : erT(k))}</td><td class="n">${fmt(round2(eeT(k) + (k === 'star' ? S(r => r.er.starI || 0) : erT(k))))}</td></tr>`).join('')}
+    <tr><td>Épargne retraite II. pilier (starobné dôchodkové sporenie)</td><td class="n"></td><td class="n">${fmt(dss)}</td><td class="n">${fmt(dss)}</td></tr>
+    ${[['Chômage partiel (podpora v čase skrátenej práce)', 'skp'], ['Garantie (garančné)', 'gar'], ['Accident (úrazové)', 'ur'], ['Fonds de réserve (rezervný fond solidarity)', 'rez']].map(([l, k]) => `<tr><td>${l}</td><td class="n"></td><td class="n">${fmt(erT(k))}</td><td class="n">${fmt(erT(k))}</td></tr>`).join('')}
+    <tr class="tot"><td>Total à payer</td><td class="n">${fmt(spEe)}</td><td class="n">${fmt(spEr)}</td><td class="n">${fmt(round2(spEe + spEr))}</td></tr></table></div>` +
+    tbl(chk('sp_vpp', `Envoyer le <b>Výkaz poistného a príspevkov (VPP)</b> pour ${MONTHS[CUR.m - 1]}`, due, '', 'Électroniquement, e-Služby de la Sociálna poisťovňa (socpoist.sk), au plus tard le jour d\'échéance des cotisations.') +
+      chk('sp_pay', 'Payer les cotisations sociales (un seul virement, variabilný symbol de l\'employeur)', due, round2(spEe + spEr), 'Dues le jour fixé pour le versement des salaires ; si ce jour est un samedi, dimanche ou férié : le jour ouvrable suivant.'));
+  h += `<h3>2 · Caisses d'assurance santé (zdravotné poistenie)</h3>`;
+  const insRows = Object.entries(byIns).map(([c, b]) => `<tr><td>${esc(INSURERS[c])} (${b.n} employé(s))</td><td class="n">${fmt(b.ee)}</td><td class="n">${fmt(b.er)}</td><td class="n">${fmt(round2(b.ee + b.er))}</td></tr>`).join('');
+  h += insRows ? `<div class="scroll"><table class="t"><tr><th>Caisse</th><th class="n">Part salariale</th><th class="n">Part patronale</th><th class="n">Total</th></tr>${insRows}</table></div>` : '<p class="note">Aucun employé soumis à l\'assurance santé publique.</p>';
+  h += tbl(Object.entries(byIns).map(([c, b]) =>
+    chk('hi_pay_' + c, `Payer l'avance de cotisation santé à ${esc(INSURERS[c])}`, due, round2(b.ee + b.er), 'Due le jour de versement des salaires.') +
+    chk('hi_rep_' + c, `Envoyer le <b>Mesačný výkaz preddavkov na poistné</b> à ${esc(INSURERS[c])}`, due ? addDays(due, 3) : null, '', 'Dans les 3 jours suivant l\'échéance du paiement ; électroniquement (obligatoire dès 3 employés), portail de la caisse.')).join(''));
+  h += `<h3>3 · Daňový úrad (administration fiscale)</h3>
+    <div class="scroll"><table class="t"><tr><th>Élément</th><th class="n">Montant</th></tr>
+    <tr><td>Acomptes d'impôt retenus (preddavky na daň)</td><td class="n">${fmt(adv)}</td></tr><tr><td>Bonus enfants versés (daňový bonus)</td><td class="n">− ${fmt(bon)}</td></tr>
+    <tr class="tot"><td>${taxNet >= 0 ? 'À verser au Daňový úrad' : 'À récupérer auprès du Daňový úrad (indiquer dans le prehľad)'}</td><td class="n">${fmt(Math.abs(taxNet))}</td></tr></table></div>` +
+    tbl(chk('tx_pay', 'Verser les acomptes d\'impôt (moins les bonus enfants)', due ? addDays(due, 5) : null, Math.max(0, taxNet), 'Dans les 5 jours suivant le versement des salaires (virement au compte du Daňový úrad, symbole de l\'employeur).') +
+      chk('tx_rep', 'Envoyer le <b>Prehľad o zrazených a odvedených preddavkoch na daň</b>', endNext, '', 'Électroniquement sur financnasprava.sk (formulaire PREHLADv26), avant la fin du mois suivant.'));
+  const R2 = R.filter(r => !r.e.taxWithheld || !r.e.health || !r.e.social);
+  if (R2.length) h += `<div class="warn">Régime particulier pour ${R2.map(r => esc(r.e.name)).join(', ')} : les montants non retenus par l'employeur n'apparaissent pas ci-dessus. Ces employés déclarent et paient eux-mêmes ce qui les concerne, selon ce qu'auront confirmé les institutions.</div>`;
+  h += `<h3>4 · Salaires</h3>` + tbl(chk('net_pay', 'Virer les salaires nets', pay, S(r => r.net), 'Le jour de paie convenu au contrat (au plus tard à la fin du mois suivant).'));
+  h += `<h3>À tout moment de l'année</h3><ul class="note">
+    <li><b>Embauche</b> : déclarer l'employé à la Sociálna poisťovňa <b>avant le début du travail</b> (registračný list FO), et à sa caisse de santé dans les 8 jours ouvrables.</li>
+    <li><b>Départ</b> : radier l'employé de la Sociálna poisťovňa et de la caisse de santé ; lui remettre ses attestations (potvrdenie o zdaniteľných príjmoch). Depuis 2026, l'evidenčný list dôchodkového poistenia (ELDP) n'est plus exigé.</li>
+    <li><b>Changement</b> (II. pilier, pension, ZŤP, caisse de santé, enfants) : mettre à jour la fiche de l'employé avant la paie du mois concerné.</li>
+    <li><b>Maladie au-delà de ${DB.params.pn.days} jours</b> : la Sociálna poisťovňa paie les indemnités ; l'arrêt de travail est transmis électroniquement (ePN).</li></ul>`;
+  h += `<h3>Chaque année</h3><ul class="note">
+    <li><b>Avant le 15 février</b> : l'employé demande la régularisation annuelle (ročné zúčtovanie) ou un certificat de revenus.</li>
+    <li><b>Avant le 10 février</b> : remettre le certificat de revenus (potvrdenie o zdaniteľných príjmoch) à l'employé qui le demande.</li>
+    <li><b>Avant le 31 mars</b> : effectuer la régularisation annuelle de l'impôt pour les employés qui l'ont demandée (avec la paie de mars).</li>
+    <li><b>Avant le 30 avril</b> : envoyer au Daňový úrad le rapport annuel (hlásenie o vyúčtovaní dane a o úhrne príjmov zo závislej činnosti).</li>
+    <li>La régularisation annuelle de l'assurance santé est faite par les caisses ; l'employeur règle ou récupère la différence qu'elles notifient.</li></ul>`;
+  $('declBody').innerHTML = h;
+  $('declBody').querySelectorAll('[data-done]').forEach(c => c.onchange = () => { DB.periods[pk] = DB.periods[pk] || {inputs: {}, done: {}}; DB.periods[pk].done = DB.periods[pk].done || {}; DB.periods[pk].done[c.dataset.done] = c.checked; save(); });
+}
+function printDecl() { document.body.classList.add('printDecl'); const done = () => { document.body.classList.remove('printDecl'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); window.print(); }
+
+// ===================== annual summary =====================
+function renderAnnee() {
+  $('anTitle').textContent = `– ${CUR.y}`;
+  const rows = [];
+  DB.employees.forEach(e => {
+    const t = {gross: 0, pn: 0, ee: 0, h: 0, zd: 0, adv: 0, bon: 0, net: 0, cost: 0, months: 0};
+    for (let m = 1; m <= 12; m++) {
+      const pk = `${CUR.y}-${String(m).padStart(2, '0')}`; if (!DB.periods[pk]) continue;
+      const r = periodResults(CUR.y, m).find(x => x.e.id === e.id); if (!r) continue;
+      t.gross += r.gross; t.pn += r.pn.comp; t.ee += r.eeS; t.h += r.hEe; t.zd += r.zd; t.adv += r.adv; t.bon += r.bonusT; t.net += r.net; t.cost += r.cost; t.months++;
+    }
+    if (t.months) rows.push({e, t});
+  });
+  $('anTable').innerHTML = `<tr><th>Employé</th><th class="n">Mois</th><th class="n">Brut</th><th class="n">Ind. maladie</th><th class="n">Cotis. sociales</th><th class="n">Santé</th><th class="n">Base imposable</th><th class="n">Impôt retenu</th><th class="n">Bonus enfants</th><th class="n">Net versé</th><th class="n">Coût employeur</th></tr>` +
+    (rows.map(({e, t}) => `<tr><td>${esc(e.name)}</td><td class="n">${t.months}</td><td class="n">${fmt(t.gross)}</td><td class="n">${fmt(t.pn)}</td><td class="n">${fmt(t.ee)}</td><td class="n">${fmt(t.h)}</td><td class="n">${fmt(t.zd)}</td><td class="n">${fmt(t.adv)}</td><td class="n">${fmt(t.bon)}</td><td class="n">${fmt(t.net)}</td><td class="n">${fmt(t.cost)}</td></tr>`).join('') ||
+      '<tr><td colspan="11" class="note">Aucun mois saisi pour cette année. Un mois compte dès qu\'une saisie y a été faite.</td></tr>');
+  $('anDue').innerHTML = `<p class="note">La régularisation annuelle (ročné zúčtovanie) recalcule l'impôt sur l'année entière (abattement annuel, bonus, éventuellement abattement conjoint, épargne retraite III. pilier…) et rembourse ou retient la différence. Ce récapitulatif donne les totaux ; le calcul annuel est à faire avec le formulaire officiel de la Finančná správa.</p>`;
+}
+
+// ===================== parameters =====================
+const PARAMS = [
+  ['Salaire minimum', [['minWage', 'mensuel (€)'], ['minHour', 'horaire (€)']]],
+  ['Plafond de la base sociale', [['maxVZ', 'mensuel (€)']]],
+  ['Cotisations sociales salarié (%)', [['ee.nem', 'maladie'], ['ee.star', 'vieillesse'], ['ee.inv', 'invalidité'], ['ee.nez', 'chômage']]],
+  ['Cotisations sociales employeur (%)', [['er.nem', 'maladie'], ['er.star', 'vieillesse'], ['dss', 'dont II. pilier'], ['er.inv', 'invalidité'], ['er.nez', 'chômage'], ['er.skp', 'chômage partiel'], ['er.gar', 'garantie'], ['er.ur', 'accident'], ['er.rez', 'fonds de réserve']]],
+  ['Assurance santé (%)', [['hEe', 'salarié'], ['hEr', 'employeur'], ['hEeZtp', 'salarié ZŤP'], ['hErZtp', 'employeur ZŤP']]],
+  ['Impôt : tranches mensuelles (€) et taux (%)', [['tax.b1', 'fin 1re tranche'], ['tax.b2', 'fin 2e tranche'], ['tax.b3', 'fin 3e tranche'], ['tax.r1', 'taux 1'], ['tax.r2', 'taux 2'], ['tax.r3', 'taux 3'], ['tax.r4', 'taux 4']]],
+  ['Abattement personnel mensuel (NČZD)', [['nczd.full', 'montant plein (€)'], ['nczd.limit', 'jusqu\'à une base de (€)'], ['nczd.k', 'au-delà : constante (€)'], ['nczd.div', '… moins base ÷']]],
+  ['Bonus enfants (mensuel)', [['bonus.u15', 'moins de 15 ans (€)'], ['bonus.u18', '15 à 18 ans (€)'], ['bonus.limit', 'réduction au-delà de (€)'], ['bonus.cut', 'réduction : écart ÷']]],
+  ['Maladie (náhrada príjmu)', [['pn.d1', 'jours 1–3 (%)'], ['pn.d4', 'jours suivants (%)'], ['pn.days', 'jours payés par l\'employeur'], ['pn.maxDvz', 'DVZ maximale (€)']]],
+  ['Majorations (%)', [['sur.ot', 'heures sup. (du gain moyen)'], ['sur.night', 'nuit (du minimum horaire)'], ['sur.sat', 'samedi (idem)'], ['sur.sun', 'dimanche (idem)'], ['sur.hol', 'férié (du gain moyen)']]],
+  ['Repas', [['meal.ticket', 'valeur minimale du ticket (€)'], ['meal.share', 'part employeur (%)'], ['meal.maxTicket', 'indemnité 5–12 h (€)']]]
+];
+const getP = k => k.split('.').reduce((o, x) => o[x], DB.params);
+const setP = (k, v) => { const a = k.split('.'), l = a.pop(); a.reduce((o, x) => o[x], DB.params)[l] = v; };
+function renderParams() {
+  $('parTitle').textContent = `– ${DB.params.year}`;
+  $('parBody').innerHTML = PARAMS.map(([t, f]) => `<div class="card"><b>${t}</b><div class="grid" style="margin-top:6px">${f.map(([k, l]) => `<label>${l}<input type="number" step="any" data-p="${k}" value="${getP(k)}"></label>`).join('')}</div></div>`).join('') +
+    `<div class="card"><b>Jours fériés chômés (MM-JJ)</b><p class="note">2026 : le 8 mai, le 15 septembre et le 17 novembre ne sont plus chômés (mais le travail ces jours-là reste majoré comme un jour férié) ; le 1er septembre n'est plus chômé depuis 2024. Pâques est recalculé automatiquement pour les autres années.</p>
+      <input id="holIn" style="width:100%;padding:6px" value="${DB.params.holidays.join(', ')}"></div>`;
+  $('parBody').querySelectorAll('[data-p]').forEach(i => i.onchange = () => { setP(i.dataset.p, num(i.value)); save(); renderAll(); });
+  $('holIn').onchange = () => { DB.params.holidays = $('holIn').value.split(/[\s,;]+/).filter(x => /^\d{2}-\d{2}$/.test(x)); save(); renderAll(); };
+  $('srcList').innerHTML = SOURCES.map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('');
+}
+function resetParams() { if (!confirm('Remettre tous les paramètres aux valeurs 2026 ?')) return; DB.params = clone(P2026); save(); renderAll(); }
+
+// ===================== CSV =====================
+function exportCSV() {
+  const R = periodResults(CUR.y, CUR.m), c = v => typeof v === 'number' ? String(v).replace('.', ',') : `"${String(v).replace(/"/g, '""')}"`;
+  const head = ['Employé', 'Brut', 'Ind. maladie', 'Base sociale', 'Cotis. sal. maladie', 'vieillesse', 'invalidité', 'chômage', 'Santé sal.', 'Base imposable', 'NČZD', 'Impôt', 'Bonus', 'Net',
+    'Patr. maladie', 'vieillesse I.', 'II. pilier', 'invalidité', 'chômage', 'chômage partiel', 'garantie', 'accident', 'réserve', 'Santé patr.', 'Coût employeur'];
+  const rows = R.map(r => [r.e.name, r.gross, r.pn.comp, r.vzS, r.ee.nem || 0, r.ee.star || 0, r.ee.inv || 0, r.ee.nez || 0, r.hEe, r.zd, r.nczd, r.adv, r.bonusT, r.net,
+    r.er.nem || 0, r.er.starI || 0, r.er.dss || 0, r.er.inv || 0, r.er.nez || 0, r.er.skp || 0, r.er.gar || 0, r.er.ur || 0, r.er.rez || 0, r.hEr, r.cost]);
+  const csv = '﻿' + [head, ...rows].map(l => l.map(c).join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = `Paie_${pkey()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ===================== navigation =====================
+function showTab(t) {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + t));
+  renderAll();
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.t));
+$('pMonth').innerHTML = MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join('');
+function setPeriod() {
+  CUR = {y: Math.max(2000, num($('pYear').value) || 2026), m: num($('pMonth').value) || 1};
+  const p = DB.periods[pkey()];
+  $('pPay').value = (p && p.payday) || iso(new Date(CUR.y, CUR.m, 10));       // default: the 10th of the following month
+  renderAll();
+}
+$('pMonth').onchange = setPeriod; $('pYear').onchange = setPeriod;
+$('pPay').onchange = () => { const pk = pkey(); DB.periods[pk] = DB.periods[pk] || {inputs: {}, done: {}}; DB.periods[pk].payday = $('pPay').value; save(); renderAll(); };
+function renderAll() {
+  renderEmployer(); renderEmpTable();
+  const on = (document.querySelector('section.tab.on') || {}).id;
+  if (on === 'tab-paie') renderPaie();
+  if (on === 'tab-fiches') renderSlips();
+  if (on === 'tab-decl') renderDecl();
+  if (on === 'tab-annee') renderAnnee();
+  if (on === 'tab-param') renderParams();
+  if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
+}
+load();
+const now = new Date(), y0 = Math.max(2026, now.getFullYear());
+$('pYear').value = y0; $('pMonth').value = y0 === now.getFullYear() ? now.getMonth() + 1 : 1;
+setPeriod();
+</script>
+</body>
+</html>
