@@ -624,7 +624,7 @@ function renderDecl() {
   const byIns = {};
   R.filter(r => r.e.health).forEach(r => { const b = byIns[r.e.insurer] || (byIns[r.e.insurer] = {ee: 0, er: 0, n: 0}); b.ee = round2(b.ee + r.hEe); b.er = round2(b.er + r.hEr); b.n++; });
   const adv = S(r => r.adv), bon = S(r => r.bonusT), taxNet = round2(adv - bon);
-  const endNext = new Date(CUR.y, CUR.m + 1, 0);
+  const endNext = nextWorkday(new Date(CUR.y, CUR.m + 1, 0));      // a deadline on a weekend or holiday moves to the next working day
   const chk = (id, txt, when, amount, how) => `<tr><td><input type="checkbox" data-done="${id}"${P.done[id] ? ' checked' : ''}></td><td>${txt}</td><td>${when ? fdate(when) : '<span class="pill r">date de paie ?</span>'}</td><td class="n">${amount === '' ? '' : eur(amount)}</td><td class="note">${how}</td></tr>`;
   const tbl = rows => `<div class="scroll"><table class="t"><tr><th style="width:30px">✓</th><th>Démarche</th><th>Échéance</th><th class="n">Montant</th><th>Comment</th></tr>${rows}</table></div>`;
   const funds = [['Maladie', 'nem'], ['Vieillesse (I. pilier)', 'star'], ['Invalidité', 'inv'], ['Chômage', 'nez']];
@@ -645,12 +645,12 @@ function renderDecl() {
   h += insRows ? `<div class="scroll"><table class="t"><tr><th>Caisse</th><th class="n">Part salariale</th><th class="n">Part patronale</th><th class="n">Total</th></tr>${insRows}</table></div>` : '<p class="note">Aucun employé soumis à l\'assurance santé publique.</p>';
   h += tbl(Object.entries(byIns).map(([c, b]) =>
     chk('hi_pay_' + c, `Payer l'avance de cotisation santé à ${esc(INSURERS[c])}`, due, round2(b.ee + b.er), 'Due le jour de versement des salaires.') +
-    chk('hi_rep_' + c, `Envoyer le <b>Mesačný výkaz preddavkov na poistné</b> à ${esc(INSURERS[c])}`, due ? addDays(due, 3) : null, '', 'Dans les 3 jours suivant l\'échéance du paiement ; électroniquement (obligatoire dès 3 employés), portail de la caisse.')).join(''));
+    chk('hi_rep_' + c, `Envoyer le <b>Mesačný výkaz preddavkov na poistné</b> à ${esc(INSURERS[c])}`, due ? nextWorkday(addDays(due, 3)) : null, '', 'Dans les 3 jours suivant l\'échéance du paiement ; électroniquement (obligatoire dès 3 employés), portail de la caisse.')).join(''));
   h += `<h3>3 · Daňový úrad (administration fiscale)</h3>
     <div class="scroll"><table class="t"><tr><th>Élément</th><th class="n">Montant</th></tr>
     <tr><td>Acomptes d'impôt retenus (preddavky na daň)</td><td class="n">${fmt(adv)}</td></tr><tr><td>Bonus enfants versés (daňový bonus)</td><td class="n">− ${fmt(bon)}</td></tr>
     <tr class="tot"><td>${taxNet >= 0 ? 'À verser au Daňový úrad' : 'À récupérer auprès du Daňový úrad (indiquer dans le prehľad)'}</td><td class="n">${fmt(Math.abs(taxNet))}</td></tr></table></div>` +
-    tbl(chk('tx_pay', 'Verser les acomptes d\'impôt (moins les bonus enfants)', due ? addDays(due, 5) : null, Math.max(0, taxNet), 'Dans les 5 jours suivant le versement des salaires (virement au compte du Daňový úrad, symbole de l\'employeur).') +
+    tbl(chk('tx_pay', 'Verser les acomptes d\'impôt (moins les bonus enfants)', due ? nextWorkday(addDays(due, 5)) : null, Math.max(0, taxNet), 'Dans les 5 jours suivant le versement des salaires (virement au compte du Daňový úrad, symbole de l\'employeur).') +
       chk('tx_rep', 'Envoyer le <b>Prehľad o zrazených a odvedených preddavkoch na daň</b>', endNext, '', 'Électroniquement sur financnasprava.sk (formulaire PREHLADv26), avant la fin du mois suivant.'));
   const R2 = R.filter(r => !r.e.taxWithheld || !r.e.health || !r.e.social);
   if (R2.length) h += `<div class="warn">Régime particulier pour ${R2.map(r => esc(r.e.name)).join(', ')} : les montants non retenus par l'employeur n'apparaissent pas ci-dessus. Ces employés déclarent et paient eux-mêmes ce qui les concerne, selon ce qu'auront confirmé les institutions.</div>`;
