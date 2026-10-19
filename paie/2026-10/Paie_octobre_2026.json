@@ -87,16 +87,18 @@
   ]
  },
  "employer": {
-  "name": "Ambassade d'Algérie",
+  "name": "Ambassade d'Algérie à Bratislava",
+  "nameSk": "Veľvyslanectvo Alžírskej demokratickej ľudovej republiky v Bratislave",
   "addr": "Bratislava",
   "ico": "",
   "dic": "",
   "sp": "",
-  "bank": ""
+  "bank": "",
+  "payDay": 20
  },
  "employees": [
   {
-   "id": "mvfo96fmjumb",
+   "id": "mvfomeh7cwr6",
    "name": "A",
    "addr": "",
    "rc": "",

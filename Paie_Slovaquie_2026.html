@@ -214,7 +214,7 @@ const MONTHS_SK = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'j�
 // ===================== state =====================
 const KEY = 'paieSlovaquie';
 const clone = o => JSON.parse(JSON.stringify(o));
-let DB = {params: clone(P2026), employer: {name: "Ambassade d'Algérie", addr: 'Bratislava', ico: '', dic: '', sp: '', bank: '', payDay: 20}, employees: [], periods: {}};
+let DB = {params: clone(P2026), employer: {name: "Ambassade d'Algérie à Bratislava", nameSk: 'Veľvyslanectvo Alžírskej demokratickej ľudovej republiky v Bratislave', addr: 'Bratislava', ico: '', dic: '', sp: '', bank: '', payDay: 20}, employees: [], periods: {}};
 // first opening on a computer: the embassy's staff as set up so far (only the net is needed, the program does the rest)
 const SEED = [{name: 'A', net: 2000, insurer: '25', dss: false, children: []}];
 let CUR = {y: 2026, m: 1};
@@ -237,6 +237,7 @@ function load() {
   let s = null;
   try { s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); DB = {...DB, ...d, employer: {...DB.employer, ...(d.employer || {})}, params: {...clone(P2026), ...(d.params || {})}}; } } catch (e) {}
   if (!s) { DB.employees = SEED.map(x => Object.assign(blankEmp(), x)); save(); }
+  if (DB.employer.name === "Ambassade d'Algérie") { DB.employer.name = "Ambassade d'Algérie à Bratislava"; save(); }   // name saved by an earlier version
 }
 function saveFile() {
   const a = document.createElement('a');
@@ -287,7 +288,7 @@ function blankEmp() {
 }
 function renderEmployer() {
   const e = DB.employer, f = (k, l, ph) => `<label>${l}<input data-er="${k}" value="${esc(e[k])}" placeholder="${ph || ''}"></label>`;
-  $('employerForm').innerHTML = f('name', 'Nom', 'Ambassade …') + f('addr', 'Adresse', 'Rue, PSČ, Bratislava') + f('ico', 'IČO / identifiant') + f('dic', 'DIČ (n° fiscal)') +
+  $('employerForm').innerHTML = f('name', 'Nom', 'Ambassade …') + f('nameSk', 'Nom en slovaque') + f('addr', 'Adresse', 'Rue, PSČ, Bratislava') + f('ico', 'IČO / identifiant') + f('dic', 'DIČ (n° fiscal)') +
     f('sp', 'Variabilný symbol Sociálna poisťovňa') + f('bank', 'IBAN de l\'employeur') +
     `<label>Jour de paie habituel (du mois même)<input data-er="payDay" type="number" min="1" max="31" value="${esc(e.payDay || 20)}"></label>`;
   $('employerForm').querySelectorAll('input').forEach(i => i.oninput = () => { DB.employer[i.dataset.er] = i.dataset.er === 'payDay' ? Math.min(31, Math.max(1, num(i.value) || 20)) : i.value; save(); });
@@ -587,7 +588,7 @@ function slipHTML(r) {
   ].map(([f, s, p, v]) => line(f, s, `${v ? p : 0} %`, v)).join('') : '';
   return `<div class="slip">
     <div class="hd"><div><h4>Fiche de paie · Výplatná páska</h4><b>${MONTHS[r.m - 1]} ${r.y}</b> <span class="sk">${MONTHS_SK[r.m - 1]} ${r.y}</span></div>
-      <div style="text-align:right"><b>${esc(E.name) || 'Employeur'}</b><br>${esc(E.addr)}<br>${E.ico ? 'IČO ' + esc(E.ico) : ''} ${E.dic ? '· DIČ ' + esc(E.dic) : ''}</div></div>
+      <div style="text-align:right"><b>${esc(E.name) || 'Employeur'}</b>${E.nameSk ? `<br><span class="sk">${esc(E.nameSk)}</span>` : ''}<br>${esc(E.addr)}<br>${E.ico ? 'IČO ' + esc(E.ico) : ''} ${E.dic ? '· DIČ ' + esc(E.dic) : ''}</div></div>
     <div class="who"><div><b>${esc(e.name)}</b><br>${esc(e.addr)}</div><div>${e.rc ? 'Rodné číslo : ' + esc(e.rc) + '<br>' : ''}${esc(e.job)}${e.start ? ' · entrée ' + parseISO(e.start).toLocaleDateString('fr-FR') : ''}<br>
       Santé : ${esc(INSURERS[e.insurer] || '')}${e.dss ? ' · II. pilier' : ''}</div></div>
     <div class="who note"><div>Jours ouvrables du mois : ${r.cal.wd} (fériés ${r.cal.hol}) · ${e.payType === 'net' ? 'Net fixe convenu ' + eur(e.net) : e.payType === 'month' ? 'Salaire mensuel ' + eur(e.salary) : 'Taux horaire ' + eur(e.rate)}</div>
@@ -618,7 +619,6 @@ function slipHTML(r) {
       ${r.meal.er && r.meal.mode === 'ticket' ? line('Tickets restaurant, part employeur', 'Stravné lístky – príspevok', '', r.meal.er) : ''}
       <tr class="s"><td>Coût total employeur <span class="sk">Celková cena práce</span></td><td class="n">${fmt(r.cost)}</td></tr>
     </table></div></div>
-    <div class="ft">Base sociale ${fmt(r.vzS)} € (plafond ${fmt(P.maxVZ)} €)${e.dss ? ` · dont II. pilier ${fmt(er.dss || 0)} € versés à la société de gestion via la Sociálna poisťovňa` : ''}. Paramètres légaux ${P.year}. Document établi le ${new Date().toLocaleDateString('fr-FR')}.</div>
   </div>`;
 }
 function renderSlips() {
