@@ -305,7 +305,7 @@ function editEmp(id) {
       ${t('hours', 'Heures par semaine', 'number', 'step="0.5"')}
       ${t('avgHour', 'Gain horaire moyen (priemerný zárobok, €/h)', 'number', 'step="0.0001" placeholder="calculé si vide"')}
       ${t('dvz', 'Base journalière maladie DVZ (€)', 'number', 'step="0.0001" placeholder="estimée si vide"')}</div>
-    <p class="note"><b>Net fixe</b> : l'employé touche chaque mois ce net, quelles que soient ses absences ou maladies ; le programme calcule le brut correspondant, sur lequel sont déclarées les cotisations et l'impôt. Le bonus enfants s'ajoute à ce net. Les autres champs du salaire ne servent pas dans ce mode.</p>
+    <p class="note"><b>Net fixe</b> : l'employé touche chaque mois ce net, quelles que soient ses absences ou maladies ; le programme calcule le brut correspondant, sur lequel sont déclarées les cotisations et l'impôt. Le bonus enfants est compris dans ce net : il réduit le brut à payer par l'ambassade, pas le net de l'employé. Les autres champs du salaire ne servent pas dans ce mode.</p>
     <p class="note">Le gain horaire moyen sert aux congés, heures supplémentaires et jours fériés ; il se calcule sur le trimestre précédent. La DVZ (denný vymeriavací základ) sert aux indemnités maladie : salaires soumis de l'année précédente ÷ nombre de jours. Laissés vides, ils sont estimés d'après le salaire.</p>
     <h3>Assurances et impôt</h3>
     <div class="grid">${s('insurer', 'Caisse d\'assurance santé', INSURERS)}${s('pension', 'Pension perçue', PENS)}
@@ -482,11 +482,12 @@ function calc(e, y, m, inp) {
 }
 // Fixed net salary (embassy practice): the agreed net is paid every month whatever happens (sick leave, leave…);
 // the program finds the gross pay that gives exactly this net, then contributions and tax follow from that gross.
-function netWage(e, G, first) { const t = {warn: []}; charges(e, G, 0, first, t); return round2(G - t.eeS - t.hEe - t.adv); }
+// the child tax bonus is part of the agreed net: it lowers the gross the embassy pays, not the employee's net
+function netWage(e, G, first) { const t = {warn: []}; charges(e, G, 0, first, t); return round2(G - t.eeS - t.hEe - t.adv + t.bonusT); }
 function grossForNet(e, target, first) {
   if (!(target > 0)) return 0;
   let hi = target * 2 + 100; while (netWage(e, hi, first) < target) hi *= 1.5;
-  let L = Math.round(target * 100), H = Math.round(hi * 100);
+  let L = 0, H = Math.round(hi * 100);                    // the child bonus can make the gross lower than the net
   while (L < H) { const M = (L + H) >> 1; if (netWage(e, M / 100, first) >= target - 1e-9) H = M; else L = M + 1; }
   return L / 100;
 }
@@ -499,7 +500,7 @@ function calcNet(e, y, m, inp, r, c) {
   r.lines.push(['Salaire brut', 'Hrubá mzda', `calculé pour un net fixe de ${fmt(agreed)} €${part < 1 ? ' (mois incomplet)' : ''}`, base]);
   if (nb) r.lines.push([`Prime (pour ${fmt(nb)} € nets)`, 'Odmena', '', round2(gross - base)]);
   charges(e, gross, 0, c.first, r);
-  const got = round2(gross - r.eeS - r.hEe - r.adv);
+  const got = round2(gross - r.eeS - r.hEe - r.adv + r.bonusT);
   if (got > target) r.warn.push(`Net fixe : arrondis légaux, le net obtenu est ${fmt(got)} € (${fmt(got - target)} € de plus que convenu).`);
   if (gross < P.minWage * e.hours / 40) r.warn.push('Brut calculé inférieur au salaire minimum.');
   const ignored = ['vac', 'unpaid', 'ot', 'night', 'sat', 'sun', 'holw', 'other'].filter(k => num(inp[k]));
@@ -511,7 +512,8 @@ function calcNet(e, y, m, inp, r, c) {
   r.meal = {days: e.meal === 'none' ? 0 : mealDays, mode: e.meal, value: tv,
     er: e.meal === 'none' ? 0 : round2(mealDays * round2(tv * P.meal.share / 100)), ee: e.meal === 'ticket' ? round2(mealDays * round2(tv * (100 - P.meal.share) / 100)) : 0};
   r.ded = num(inp.ded);
-  r.net = round2(got + r.bonusT - r.meal.ee - r.ded + (e.meal === 'cash' ? r.meal.er : 0));
+  if (got < target) r.warn.push(`Net fixe non atteint exactement (${fmt(got)} € pour ${fmt(target)} €) : vérifiez le calcul pour cet employé.`);
+  r.net = round2(got - r.meal.ee - r.ded + (e.meal === 'cash' ? r.meal.er : 0));
   r.cost = round2(gross + r.erS + r.hEr + r.meal.er);
   if (!e.taxWithheld) r.warn.push('Impôt non retenu par l\'employeur : l\'employé déclare lui-même ses revenus (daňové priznanie typ A ou B).');
   return r;
@@ -587,7 +589,7 @@ function slipHTML(r) {
       ${r.meal.mode === 'cash' ? line('Contribution repas', 'Finančný príspevok na stravovanie', `${r.meal.days} j`, r.meal.er) : ''}
       ${r.meal.mode === 'ticket' ? line('Tickets restaurant, part salarié', 'Stravné lístky – podiel zamestnanca', `${r.meal.days} × ${fmt(r.meal.value)}`, r.meal.ee, true) : ''}
       ${r.ded ? line('Autres retenues', 'Iné zrážky', '', r.ded, true) : ''}
-      ${r.fixedNet ? `<tr><td colspan="2" class="sk">Salaire net convenu ${fmt(r.fixedNet.agreed)} €${r.fixedNet.bonus ? ' + prime nette ' + fmt(r.fixedNet.bonus) + ' €' : ''}${r.bonusT ? ' + bonus enfants' : ''}</td></tr>` : ''}
+      ${r.fixedNet ? `<tr><td colspan="2" class="sk">Salaire net convenu ${fmt(r.fixedNet.agreed)} €${r.fixedNet.bonus ? ' + prime nette ' + fmt(r.fixedNet.bonus) + ' €' : ''}${r.bonusT ? ', bonus enfants de ' + fmt(r.bonusT) + ' € compris' : ''}</td></tr>` : ''}
       <tr class="net"><td>Net à payer <span class="sk">Na výplatu</span></td><td class="n">${fmt(r.net)} €</td></tr>
       ${e.iban ? `<tr><td colspan="2" class="sk">Virement sur ${esc(e.iban)}</td></tr>` : ''}
       <tr class="h"><td>Charges patronales · Odvody zamestnávateľa</td><td class="n"></td></tr>
