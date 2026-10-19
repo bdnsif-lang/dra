@@ -678,6 +678,7 @@ function useLayout(obj) {
   n.lw = Object.assign(clone(DEF.lw), n.lw || {});
   if (!Array.isArray(n.hl) || n.hl.length !== HL_DEF.length) n.hl = clone(DEF.hl);
   if (!Array.isArray(n.grp) || n.grp.length !== GRP_DEF.length) n.grp = clone(DEF.grp);
+  n.grp.forEach((g, i) => { if (g.t === 'PRIX ML') g.t = GRP_DEF[i].t; });     // layouts saved before the € title
   for (const k in all) if (k.startsWith('free_')) { all[k].remove(); delete all[k]; }
   L = n;
   L.free.forEach(mkFree);
@@ -963,9 +964,9 @@ const LEAD_DEF = {titre: {x1: 225.2, x2: 255.0, y: 27.3}, exer: {x1: 189.6, x2: 
                   au: {x1: 226.8, x2: 247.3, y: 45.9}, A: {x1: 257.5, x2: 294.6, y: 244.0}, Le: {x1: 303.0, x2: 328.4, y: 244.2}};
 const HL_DEF = ["N°\nd'ordre  (1)", 'DATE', "DESIGNATION DETAILLEE\nDE L'ARTICLE", 'NOMBRE', 'Unitaire', 'Total', 'TAUX',
                 'MONTANT TOTAL\nDA', 'AFFECTATION  (2)', 'Fournisseur', 'N°', 'N° G.L.O.D', 'N° de code\nInformatique', 'OBSERVATIONS  (3)'];
-const GRP_DEF = [{a: 4, b: 6, t: 'PRIX ML'}, {a: 9, b: 11, t: 'FACTURE'}];
+const GRP_DEF = [{a: 4, b: 6, t: 'PRIX ML (€)'}, {a: 9, b: 11, t: 'FACTURE'}];
 const GROUP = {amb: ['ambassade'], cons: ['consulat'], titre: ['feuillet'], exer: ['exercice'], per: ['du'], au: ['au'], A: ['lieu'], Le: ['le']};
-const TBLNAMES = {top: 'Bord supérieur du tableau', sub: 'Ligne sous « PRIX ML » et « FACTURE »', head: 'Bas des titres de colonnes', bot: 'Bas du tableau (fin des colonnes)'};
+const TBLNAMES = {top: 'Bord supérieur du tableau', sub: 'Ligne sous « PRIX ML (€) » et « FACTURE »', head: 'Bas des titres de colonnes', bot: 'Bas du tableau (fin des colonnes)'};
 Object.assign(DEF, {
   tbl: {top: 56.9, sub: 66.6, head: 75.4, bot: 231.8},
   lab: {"amb": {"t": "AMBASSADE", "x": 18.6, "y": 7.5, "s": 10.3, "b": true, "a": "l"}, "cons": {"t": "CONSULAT :", "x": 18.9, "y": 15.8, "s": 10.3, "b": true, "a": "l"}, "titre": {"t": "FEUILLET D'INVENTAIRE N°", "x": 158.6, "y": 27.4, "s": 13.7, "b": true, "a": "l"}, "exer": {"t": "EXERCICE :", "x": 164.0, "y": 37.2, "s": 10.3, "b": true, "a": "l"}, "per": {"t": "PÉRIODE DU :", "x": 164.0, "y": 45.8, "s": 10.3, "b": true, "a": "l"}, "au": {"t": "AU", "x": 220.3, "y": 46.0, "s": 10.3, "b": true, "a": "l"}, "A": {"t": "A", "x": 253.9, "y": 244.2, "s": 10.3, "b": true, "a": "l"}, "Le": {"t": "Le", "x": 298.4, "y": 244.4, "s": 10.3, "b": true, "a": "l"}, "fn1": {"t": "(1) Série de n° ininterrompue pour tout l'exercice.", "x": 9.9, "y": 239.3, "s": 8.4, "b": false, "a": "l"}, "fn2": {"t": "(2) Préciser : Résidence ou Chancellerie.", "x": 9.8, "y": 245.7, "s": 8.4, "b": false, "a": "l"}, "fn3": {"t": "(3) Préciser - Acquisition - Réforme - Vente - Don - Immobilisation - Cession - Destruction.", "x": 9.8, "y": 252.6, "s": 8.4, "b": false, "a": "l"}, "vu": {"t": "Vu et approuvé", "x": 216.4, "y": 240.0, "s": 10.6, "b": false, "a": "c"}, "chef": {"t": "Le Chef de Poste", "x": 216.4, "y": 246.0, "s": 7.4, "b": true, "a": "c"}, "cert": {"t": "Certifié sincère et conforme", "x": 361.1, "y": 239.7, "s": 10.6, "b": false, "a": "c"}, "att": {"t": "L'Attaché de Chancellerie", "x": 361.1, "y": 247.0, "s": 8.8, "b": false, "a": "c"}},
@@ -2566,7 +2567,7 @@ function finishSheet() {
   document.getElementById('finTxt').innerHTML =
     `<div class="fgrid"><span>Pages</span><b>${pages} (feuillets N° ${first}${pages > 1 ? ' à ' + last : ''})</b>
       <span>Lignes</span><b>${used.length} (N° d'ordre ${nos.length ? Math.min(...nos) + ' à ' + Math.max(...nos) : '—'})</b>
-      <span>Total prix ML</span><b>${nf.format(totML)}</b><span>Montant total DA</span><b>${total ? nf.format(total) + ' DA' : '— (saisissez le taux du jour)'}</b></div>
+      <span>Total prix</span><b>${nf.format(totML)} €</b><span>Montant total DA</span><b>${total ? nf.format(total) + ' DA' : '— (saisissez le taux du jour)'}</b></div>
      <p>Le feuillet est numéroté et rangé, sans ligne vide. Enregistrez-le, puis imprimez toutes les pages sur les feuilles A3 pré-imprimées ou gardez le PDF.</p>`;
   document.getElementById('finDlg').hidden = false;
 }
@@ -3516,9 +3517,9 @@ function svStatus() {
   const sum = (rows, k) => rows.reduce((a, r) => a + (rowUsed(r) && isFinite(num(r[k])) ? num(r[k]) : 0), 0);
   const p = BOOK.cur, page = BOOK.pages[p].rows, before = BOOK.pages.slice(0, p).flatMap(pg => pg.rows), every = BOOK.pages.flatMap(pg => pg.rows);
   const n = every.filter(rowUsed).length;
-  $i('svTot').innerHTML = `Page ${p + 1} : <b>${nf.format(sum(page, 'pt'))}</b> ML · <b>${nf.format(sum(page, 'mda'))}</b> DA` +
+  $i('svTot').innerHTML = `Page ${p + 1} : <b>${nf.format(sum(page, 'pt'))}</b> € · <b>${nf.format(sum(page, 'mda'))}</b> DA` +
     (p > 0 ? ` <span class="sep">|</span> Report des pages 1 à ${p} : <b>${nf.format(sum(before, 'mda'))}</b> DA` : '') +
-    ` <span class="sep">|</span> Total du feuillet (${n} ligne${n > 1 ? 's' : ''}) : <b>${nf.format(sum(every, 'pt'))}</b> ML · <b>${nf.format(sum(every, 'mda'))}</b> DA`;
+    ` <span class="sep">|</span> Total du feuillet (${n} ligne${n > 1 ? 's' : ''}) : <b>${nf.format(sum(every, 'pt'))}</b> € · <b>${nf.format(sum(every, 'mda'))}</b> DA`;
   const nb = chk.rows.length + (Object.keys(chk.hdr).length ? 1 : 0), btn = $i('svIssues');
   btn.hidden = !nb;
   btn.textContent = `⚠ ${chk.rows.length ? chk.rows.length + ' ligne(s) à vérifier' : ''}${chk.rows.length && Object.keys(chk.hdr).length ? ' + ' : ''}${Object.keys(chk.hdr).length ? 'en-tête à vérifier' : ''}`;
