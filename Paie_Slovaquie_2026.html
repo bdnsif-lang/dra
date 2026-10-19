@@ -270,7 +270,7 @@ const parseISO = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); ret
 
 // ===================== employees =====================
 function blankEmp() {
-  return {id: newId(), name: '', addr: '', rc: '', birth: '', job: '', start: '', end: '', iban: '', payType: 'month', salary: 915, rate: 0, hours: 40,
+  return {id: newId(), name: '', addr: '', rc: '', birth: '', job: '', start: '', end: '', iban: '', payType: 'net', net: 0, salary: 915, rate: 0, hours: 40,
     insurer: '25', dss: false, pension: 'none', ztp: false, social: true, health: true, taxWithheld: true, nczd: true, children: [],
     avgHour: 0, dvz: 0, meal: 'none', ticket: 0, active: true};
 }
@@ -282,7 +282,7 @@ function renderEmployer() {
 }
 function renderEmpTable() {
   const rows = DB.employees.map(e => `<tr><td><b>${esc(e.name) || '<i>sans nom</i>'}</b><br><span class="note">${esc(e.job)}</span></td>
-    <td>${e.payType === 'month' ? eur(e.salary) + ' / mois' : eur(e.rate) + ' / h'}<br><span class="note">${e.hours} h / semaine</span></td>
+    <td>${e.payType === 'net' ? eur(e.net) + ' net fixe' : e.payType === 'month' ? eur(e.salary) + ' / mois' : eur(e.rate) + ' / h'}<br><span class="note">${e.hours} h / semaine</span></td>
     <td>${esc(INSURERS[e.insurer] || '')}</td>
     <td>${e.dss ? '<span class="pill">II. pilier</span> ' : ''}${e.pension !== 'none' ? `<span class="pill y">${esc(PENS[e.pension])}</span> ` : ''}${e.ztp ? '<span class="pill y">ZŤP</span> ' : ''}
       ${!e.social ? '<span class="pill r">sans cotis. sociales</span> ' : ''}${!e.health ? '<span class="pill r">sans assurance santé</span> ' : ''}${!e.taxWithheld ? '<span class="pill r">impôt non retenu</span> ' : ''}
@@ -299,11 +299,13 @@ function editEmp(id) {
     <div class="grid">${t('name', 'Nom et prénom')}${t('rc', 'Rodné číslo')}${t('birth', 'Date de naissance', 'date')}${t('addr', 'Adresse')}
       ${t('job', 'Poste')}${t('start', 'Date d\'entrée', 'date')}${t('end', 'Date de sortie', 'date')}${t('iban', 'IBAN')}</div>
     <h3>Contrat et salaire</h3>
-    <div class="grid">${s('payType', 'Type de salaire', {month: 'Salaire mensuel (mesačná mzda)', hour: 'Salaire horaire (hodinová mzda)'})}
+    <div class="grid">${s('payType', 'Type de salaire', {net: 'Net fixe mensuel (dohodnutá čistá mzda)', month: 'Salaire mensuel brut (mesačná mzda)', hour: 'Salaire horaire brut (hodinová mzda)'})}
+      ${t('net', 'Salaire net fixe (€)', 'number', 'step="0.01"')}
       ${t('salary', 'Salaire mensuel brut (€)', 'number', 'step="0.01"')}${t('rate', 'Taux horaire brut (€)', 'number', 'step="0.0001"')}
       ${t('hours', 'Heures par semaine', 'number', 'step="0.5"')}
       ${t('avgHour', 'Gain horaire moyen (priemerný zárobok, €/h)', 'number', 'step="0.0001" placeholder="calculé si vide"')}
       ${t('dvz', 'Base journalière maladie DVZ (€)', 'number', 'step="0.0001" placeholder="estimée si vide"')}</div>
+    <p class="note"><b>Net fixe</b> : l'employé touche chaque mois ce net, quelles que soient ses absences ou maladies ; le programme calcule le brut correspondant, sur lequel sont déclarées les cotisations et l'impôt. Le bonus enfants s'ajoute à ce net. Les autres champs du salaire ne servent pas dans ce mode.</p>
     <p class="note">Le gain horaire moyen sert aux congés, heures supplémentaires et jours fériés ; il se calcule sur le trimestre précédent. La DVZ (denný vymeriavací základ) sert aux indemnités maladie : salaires soumis de l'année précédente ÷ nombre de jours. Laissés vides, ils sont estimés d'après le salaire.</p>
     <h3>Assurances et impôt</h3>
     <div class="grid">${s('insurer', 'Caisse d\'assurance santé', INSURERS)}${s('pension', 'Pension perçue', PENS)}
@@ -320,6 +322,9 @@ function editEmp(id) {
     <div class="row" style="margin-top:12px"><button class="b pri" id="empOk">✔ Enregistrer l'employé</button><button class="b" onclick="$('empEdit').innerHTML=''">Annuler</button></div></div>`;
   window.KIDS = clone(e.children);
   renderKids();
+  const typeSel = $('empEdit').querySelector('[data-k=payType]'), only = {net: ['net'], salary: ['month'], rate: ['hour'], avgHour: ['month', 'hour'], dvz: ['month', 'hour']};
+  const syncType = () => Object.entries(only).forEach(([k, types]) => { $('empEdit').querySelector(`[data-k=${k}]`).closest('label').hidden = !types.includes(typeSel.value); });
+  typeSel.onchange = syncType; syncType();
   $('empOk').onclick = () => {
     const box = $('empEdit');
     box.querySelectorAll('[data-k]').forEach(i => { const k = i.dataset.k; e[k] = i.type === 'checkbox' ? i.checked : i.type === 'number' ? num(i.value) : i.value; });
@@ -342,7 +347,7 @@ const INFIELDS = [
   ['vac', 'Congés (jours)', 'Dovolenka – pracovné dni'], ['unpaid', 'Absence non payée (jours)', 'Neplatené voľno – pracovné dni'],
   ['pnFrom', 'Maladie du', 'PN od (date)'], ['pnTo', 'au', 'PN do (vide = encore en cours)'],
   ['ot', 'Heures sup.', 'Nadčas – hodiny'], ['night', 'Nuit (h)', 'Nočná práca – hodiny'], ['sat', 'Samedi (h)', 'Sobota – hodiny'], ['sun', 'Dimanche (h)', 'Nedeľa – hodiny'],
-  ['holw', 'Férié travaillé (h)', 'Práca vo sviatok – hodiny'], ['bonus', 'Prime (€)', 'Odmena / prémia'], ['other', 'Autre brut (€)', 'Iný zdaniteľný príjem'],
+  ['holw', 'Férié travaillé (h)', 'Práca vo sviatok – hodiny'], ['bonus', 'Prime (€)', 'Odmena / prémia (montant net pour un employé à net fixe)'], ['other', 'Autre brut (€)', 'Iný zdaniteľný príjem'],
   ['mealDays', 'Jours repas', 'Počet dní nároku na stravu'], ['ded', 'Retenues (€)', 'Iné zrážky (záloha, exekúcia…)']
 ];
 function inputs(e, pk) {
@@ -367,62 +372,9 @@ function dvzOf(e) {
 }
 function ageAt(birth, d) { const b = parseISO(birth); if (!b) return 99; let a = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) a--; return a; }
 
-function calc(e, y, m, inp) {
-  const P = DB.params, cal = monthCal(y, m), first = new Date(y, m - 1, 1), last = new Date(y, m - 1, cal.days);
-  const r = {e, y, m, cal, lines: [], warn: []};
-  const dailyH = e.hours / 5, ah = avgHourOf(e);
-  // employment dates: days outside the contract are not paid
-  const st = parseISO(e.start), en = parseISO(e.end);
-  let outside = 0;
-  cal.list.forEach(x => { if (x.weekday && ((st && x.dt < st) || (en && x.dt > en))) outside++; });
-  // sick leave (PN): calendar days in this month and their rank in the sick period
-  const pf = parseISO(inp.pnFrom), pt = parseISO(inp.pnTo) || (pf ? last : null);
-  let pnWd = 0, pnDays = 0, pnEr = 0, pnSP = 0; const dvz = dvzOf(e), pnRows = [];
-  if (pf && pt && pt >= first && pf <= last) {
-    for (let d = new Date(Math.max(pf, first)); d <= pt && d <= last; d = addDays(d, 1)) {
-      const rank = Math.round((d - pf) / 864e5) + 1, info = cal.list[d.getDate() - 1];
-      pnDays++; if (info.weekday && !info.hol) pnWd++;
-      if (rank <= 3) pnEr += dvz * P.pn.d1 / 100; else if (rank <= P.pn.days) pnEr += dvz * P.pn.d4 / 100; else pnSP++;
-    }
-    pnEr = ceil2(pnEr);
-  }
-  r.pn = {days: pnDays, wd: pnWd, comp: pnEr, sp: pnSP, dvz};
-  const vac = num(inp.vac), unpaid = num(inp.unpaid);
-  const absent = vac + pnWd + unpaid + outside;
-  // salary for the time worked
-  let base = 0, holPay = 0, hourly;
-  if (e.payType === 'month') {
-    hourly = e.salary / (cal.wd * dailyH);
-    base = round2(e.salary * Math.max(0, cal.wd - absent) / cal.wd);
-    r.lines.push(['Salaire de base', 'Mzda za odpracovaný čas', `${e.salary.toFixed(2)} × ${Math.max(0, cal.wd - absent)}/${cal.wd} j`, base]);
-  } else {
-    hourly = e.rate;
-    const worked = Math.max(0, cal.wd - cal.hol - absent);
-    base = round2(e.rate * dailyH * worked);
-    r.lines.push(['Salaire des heures travaillées', 'Mzda za odpracované hodiny', `${round2(worked * dailyH)} h × ${e.rate}`, base]);
-    if (cal.hol) { holPay = round2(cal.hol * dailyH * ah); r.lines.push(['Jours fériés (indemnité)', 'Náhrada mzdy za sviatok', `${cal.hol * dailyH} h × ${ah.toFixed(4)}`, holPay]); }
-  }
-  const vacPay = round2(vac * dailyH * ah);
-  if (vac) r.lines.push(['Congés payés', 'Náhrada mzdy za dovolenku', `${vac * dailyH} h × ${ah.toFixed(4)}`, vacPay]);
-  const ot = num(inp.ot), otPay = round2(ot * (hourly + ah * P.sur.ot / 100));
-  if (ot) r.lines.push(['Heures supplémentaires', 'Mzda + príplatok za nadčas', `${ot} h × (${hourly.toFixed(4)} + ${P.sur.ot} %)`, otPay]);
-  const sur = (k, l, sk, pct, rate) => { const h = num(inp[k]); if (!h) return 0; const v = round2(h * rate * pct / 100); r.lines.push([l, sk, `${h} h × ${pct} % × ${rate.toFixed(4)}`, v]); return v; };
-  const sNight = sur('night', 'Majoration de nuit', 'Príplatok za nočnú prácu', P.sur.night, P.minHour);
-  const sSat = sur('sat', 'Majoration samedi', 'Príplatok za prácu v sobotu', P.sur.sat, P.minHour);
-  const sSun = sur('sun', 'Majoration dimanche', 'Príplatok za prácu v nedeľu', P.sur.sun, P.minHour);
-  const sHol = sur('holw', 'Majoration jour férié', 'Príplatok za prácu vo sviatok', P.sur.hol, ah);
-  const bonus = num(inp.bonus), other = num(inp.other);
-  if (bonus) r.lines.push(['Prime', 'Odmena', '', bonus]);
-  if (other) r.lines.push(['Autre revenu brut', 'Iný príjem', '', other]);
-  const gross = round2(base + holPay + vacPay + otPay + sNight + sSat + sSun + sHol + bonus + other);
-  r.gross = gross;
-  if (pnEr) r.lines.push(['Indemnité maladie (employeur)', 'Náhrada príjmu pri PN', `${pnDays} j, DVZ ${dvz.toFixed(4)}`, pnEr]);
-  // minimum wage check
-  const minDue = P.minWage * e.hours / 40;
-  if (e.payType === 'month' && e.salary < minDue - 0.005) r.warn.push(`Salaire inférieur au salaire minimum (${eur(minDue)} pour ${e.hours} h/semaine).`);
-  if (e.payType === 'hour' && e.rate < P.minHour - 0.00005) r.warn.push(`Taux horaire inférieur au minimum (${P.minHour} €/h).`);
-  if (pnSP) r.warn.push(`${pnSP} jour(s) de maladie au-delà du ${P.pn.days}e jour : indemnités payées par la Sociálna poisťovňa (nemocenské), pas par l'employeur.`);
-  if (ah && !(e.avgHour > 0) && (vac || ot || num(inp.holw) || (e.payType === 'hour' && cal.hol))) r.warn.push('Gain horaire moyen estimé d\'après le salaire : indiquez le vrai priemerný zárobok dans la fiche de l\'employé.');
+// contributions and income tax on a month's pay (fills r; also used to find the gross pay of a fixed net salary)
+function charges(e, gross, pnEr, first, r) {
+  const P = DB.params;
   // assessment base (vymeriavací základ): gross pay; sick-leave compensation is not part of it
   const vz = gross, vzS = Math.min(vz, P.maxVZ);
   if (vz > P.maxVZ) r.warn.push(`Base sociale plafonnée à ${eur(P.maxVZ)}.`);
@@ -456,6 +408,65 @@ function calc(e, y, m, inp) {
     if (kids.length && sumK > cap) r.warn.push(`Bonus enfants limité à ${B.pct[Math.min(kids.length, B.pct.length) - 1]} % de la base imposable.`);
   }
   Object.assign(r, {zd, nczd, adv, bonusT, kids});
+}
+function calc(e, y, m, inp) {
+  const P = DB.params, cal = monthCal(y, m), first = new Date(y, m - 1, 1), last = new Date(y, m - 1, cal.days);
+  const r = {e, y, m, cal, lines: [], warn: []};
+  const dailyH = e.hours / 5, ah = avgHourOf(e);
+  // employment dates: days outside the contract are not paid
+  const st = parseISO(e.start), en = parseISO(e.end);
+  let outside = 0;
+  cal.list.forEach(x => { if (x.weekday && ((st && x.dt < st) || (en && x.dt > en))) outside++; });
+  // sick leave (PN): calendar days in this month and their rank in the sick period
+  const pf = parseISO(inp.pnFrom), pt = parseISO(inp.pnTo) || (pf ? last : null);
+  let pnWd = 0, pnDays = 0, pnEr = 0, pnSP = 0; const dvz = dvzOf(e), pnRows = [];
+  if (pf && pt && pt >= first && pf <= last) {
+    for (let d = new Date(Math.max(pf, first)); d <= pt && d <= last; d = addDays(d, 1)) {
+      const rank = Math.round((d - pf) / 864e5) + 1, info = cal.list[d.getDate() - 1];
+      pnDays++; if (info.weekday && !info.hol) pnWd++;
+      if (rank <= 3) pnEr += dvz * P.pn.d1 / 100; else if (rank <= P.pn.days) pnEr += dvz * P.pn.d4 / 100; else pnSP++;
+    }
+    pnEr = ceil2(pnEr);
+  }
+  r.pn = {days: pnDays, wd: pnWd, comp: pnEr, sp: pnSP, dvz};
+  const vac = num(inp.vac), unpaid = num(inp.unpaid);
+  const absent = vac + pnWd + unpaid + outside;
+  // salary for the time worked
+  let base = 0, holPay = 0, hourly;
+  if (e.payType === 'net') return calcNet(e, y, m, inp, r, {cal, first, outside, absent, pnDays, pnSP});
+  if (e.payType === 'month') {
+    hourly = e.salary / (cal.wd * dailyH);
+    base = round2(e.salary * Math.max(0, cal.wd - absent) / cal.wd);
+    r.lines.push(['Salaire de base', 'Mzda za odpracovaný čas', `${e.salary.toFixed(2)} × ${Math.max(0, cal.wd - absent)}/${cal.wd} j`, base]);
+  } else {
+    hourly = e.rate;
+    const worked = Math.max(0, cal.wd - cal.hol - absent);
+    base = round2(e.rate * dailyH * worked);
+    r.lines.push(['Salaire des heures travaillées', 'Mzda za odpracované hodiny', `${round2(worked * dailyH)} h × ${e.rate}`, base]);
+    if (cal.hol) { holPay = round2(cal.hol * dailyH * ah); r.lines.push(['Jours fériés (indemnité)', 'Náhrada mzdy za sviatok', `${cal.hol * dailyH} h × ${ah.toFixed(4)}`, holPay]); }
+  }
+  const vacPay = round2(vac * dailyH * ah);
+  if (vac) r.lines.push(['Congés payés', 'Náhrada mzdy za dovolenku', `${vac * dailyH} h × ${ah.toFixed(4)}`, vacPay]);
+  const ot = num(inp.ot), otPay = round2(ot * (hourly + ah * P.sur.ot / 100));
+  if (ot) r.lines.push(['Heures supplémentaires', 'Mzda + príplatok za nadčas', `${ot} h × (${hourly.toFixed(4)} + ${P.sur.ot} %)`, otPay]);
+  const sur = (k, l, sk, pct, rate) => { const h = num(inp[k]); if (!h) return 0; const v = round2(h * rate * pct / 100); r.lines.push([l, sk, `${h} h × ${pct} % × ${rate.toFixed(4)}`, v]); return v; };
+  const sNight = sur('night', 'Majoration de nuit', 'Príplatok za nočnú prácu', P.sur.night, P.minHour);
+  const sSat = sur('sat', 'Majoration samedi', 'Príplatok za prácu v sobotu', P.sur.sat, P.minHour);
+  const sSun = sur('sun', 'Majoration dimanche', 'Príplatok za prácu v nedeľu', P.sur.sun, P.minHour);
+  const sHol = sur('holw', 'Majoration jour férié', 'Príplatok za prácu vo sviatok', P.sur.hol, ah);
+  const bonus = num(inp.bonus), other = num(inp.other);
+  if (bonus) r.lines.push(['Prime', 'Odmena', '', bonus]);
+  if (other) r.lines.push(['Autre revenu brut', 'Iný príjem', '', other]);
+  const gross = round2(base + holPay + vacPay + otPay + sNight + sSat + sSun + sHol + bonus + other);
+  r.gross = gross;
+  if (pnEr) r.lines.push(['Indemnité maladie (employeur)', 'Náhrada príjmu pri PN', `${pnDays} j, DVZ ${dvz.toFixed(4)}`, pnEr]);
+  // minimum wage check
+  const minDue = P.minWage * e.hours / 40;
+  if (e.payType === 'month' && e.salary < minDue - 0.005) r.warn.push(`Salaire inférieur au salaire minimum (${eur(minDue)} pour ${e.hours} h/semaine).`);
+  if (e.payType === 'hour' && e.rate < P.minHour - 0.00005) r.warn.push(`Taux horaire inférieur au minimum (${P.minHour} €/h).`);
+  if (pnSP) r.warn.push(`${pnSP} jour(s) de maladie au-delà du ${P.pn.days}e jour : indemnités payées par la Sociálna poisťovňa (nemocenské), pas par l'employeur.`);
+  if (ah && !(e.avgHour > 0) && (vac || ot || num(inp.holw) || (e.payType === 'hour' && cal.hol))) r.warn.push('Gain horaire moyen estimé d\'après le salaire : indiquez le vrai priemerný zárobok dans la fiche de l\'employé.');
+  charges(e, gross, pnEr, first, r);
   // meals
   const mealDays = inp.mealDays === undefined || inp.mealDays === '' ? Math.max(0, cal.wd - cal.hol - absent) : num(inp.mealDays);
   const tv = e.ticket > 0 ? e.ticket : P.meal.ticket;
@@ -464,8 +475,44 @@ function calc(e, y, m, inp) {
   if (e.meal !== 'none' && tv < P.meal.ticket) r.warn.push(`Valeur du ticket inférieure au minimum légal (${eur(P.meal.ticket)}).`);
   const ded = num(inp.ded);
   r.ded = ded;
-  r.net = round2(gross + pnEr - eeS - hEe - adv + bonusT - r.meal.ee - ded + (e.meal === 'cash' ? r.meal.er : 0));
-  r.cost = round2(gross + pnEr + erS + hEr + r.meal.er);
+  r.net = round2(gross + pnEr - r.eeS - r.hEe - r.adv + r.bonusT - r.meal.ee - ded + (e.meal === 'cash' ? r.meal.er : 0));
+  r.cost = round2(gross + pnEr + r.erS + r.hEr + r.meal.er);
+  if (!e.taxWithheld) r.warn.push('Impôt non retenu par l\'employeur : l\'employé déclare lui-même ses revenus (daňové priznanie typ A ou B).');
+  return r;
+}
+// Fixed net salary (embassy practice): the agreed net is paid every month whatever happens (sick leave, leave…);
+// the program finds the gross pay that gives exactly this net, then contributions and tax follow from that gross.
+function netWage(e, G, first) { const t = {warn: []}; charges(e, G, 0, first, t); return round2(G - t.eeS - t.hEe - t.adv); }
+function grossForNet(e, target, first) {
+  if (!(target > 0)) return 0;
+  let hi = target * 2 + 100; while (netWage(e, hi, first) < target) hi *= 1.5;
+  let L = Math.round(target * 100), H = Math.round(hi * 100);
+  while (L < H) { const M = (L + H) >> 1; if (netWage(e, M / 100, first) >= target - 1e-9) H = M; else L = M + 1; }
+  return L / 100;
+}
+function calcNet(e, y, m, inp, r, c) {
+  const P = DB.params, part = c.outside ? (c.cal.wd - c.outside) / c.cal.wd : 1;
+  const agreed = round2(num(e.net) * part), nb = num(inp.bonus), target = round2(agreed + nb);
+  if (!(num(e.net) > 0)) r.warn.push('Salaire net fixe non indiqué dans la fiche de l\'employé.');
+  const gross = grossForNet(e, target, c.first), base = nb ? grossForNet(e, agreed, c.first) : gross;
+  r.gross = gross; r.pn = {days: c.pnDays, wd: 0, comp: 0, sp: c.pnSP, dvz: 0}; r.fixedNet = {agreed, bonus: nb, target};
+  r.lines.push(['Salaire brut', 'Hrubá mzda', `calculé pour un net fixe de ${fmt(agreed)} €${part < 1 ? ' (mois incomplet)' : ''}`, base]);
+  if (nb) r.lines.push([`Prime (pour ${fmt(nb)} € nets)`, 'Odmena', '', round2(gross - base)]);
+  charges(e, gross, 0, c.first, r);
+  const got = round2(gross - r.eeS - r.hEe - r.adv);
+  if (got > target) r.warn.push(`Net fixe : arrondis légaux, le net obtenu est ${fmt(got)} € (${fmt(got - target)} € de plus que convenu).`);
+  if (gross < P.minWage * e.hours / 40) r.warn.push('Brut calculé inférieur au salaire minimum.');
+  const ignored = ['vac', 'unpaid', 'ot', 'night', 'sat', 'sun', 'holw', 'other'].filter(k => num(inp[k]));
+  if (c.pnDays) r.warn.push(`Net fixe : ${c.pnDays} jour(s) de maladie sans effet sur le salaire (l'ambassade maintient le salaire au lieu de l'indemnité légale).` +
+    (c.pnSP ? ` Au-delà du ${P.pn.days}e jour, la Sociálna poisťovňa peut verser en plus des indemnités (nemocenské) à l'employé : à régler avec lui.` : ''));
+  if (ignored.length) r.warn.push('Net fixe : congés, absences, heures et majorations saisis sont ignorés (seule la prime, en net, est ajoutée).');
+  const mealDays = inp.mealDays === undefined || inp.mealDays === '' ? Math.max(0, c.cal.wd - c.cal.hol - c.absent) : num(inp.mealDays);
+  const tv = e.ticket > 0 ? e.ticket : P.meal.ticket;
+  r.meal = {days: e.meal === 'none' ? 0 : mealDays, mode: e.meal, value: tv,
+    er: e.meal === 'none' ? 0 : round2(mealDays * round2(tv * P.meal.share / 100)), ee: e.meal === 'ticket' ? round2(mealDays * round2(tv * (100 - P.meal.share) / 100)) : 0};
+  r.ded = num(inp.ded);
+  r.net = round2(got + r.bonusT - r.meal.ee - r.ded + (e.meal === 'cash' ? r.meal.er : 0));
+  r.cost = round2(gross + r.erS + r.hEr + r.meal.er);
   if (!e.taxWithheld) r.warn.push('Impôt non retenu par l\'employeur : l\'employé déclare lui-même ses revenus (daňové priznanie typ A ou B).');
   return r;
 }
@@ -521,8 +568,8 @@ function slipHTML(r) {
       <div style="text-align:right"><b>${esc(E.name) || 'Employeur'}</b><br>${esc(E.addr)}<br>${E.ico ? 'IČO ' + esc(E.ico) : ''} ${E.dic ? '· DIČ ' + esc(E.dic) : ''}</div></div>
     <div class="who"><div><b>${esc(e.name)}</b><br>${esc(e.addr)}</div><div>${e.rc ? 'Rodné číslo : ' + esc(e.rc) + '<br>' : ''}${esc(e.job)}${e.start ? ' · entrée ' + parseISO(e.start).toLocaleDateString('fr-FR') : ''}<br>
       Santé : ${esc(INSURERS[e.insurer] || '')}${e.dss ? ' · II. pilier' : ''}</div></div>
-    <div class="who note"><div>Jours ouvrables du mois : ${r.cal.wd} (fériés ${r.cal.hol}) · ${e.payType === 'month' ? 'Salaire mensuel ' + eur(e.salary) : 'Taux horaire ' + eur(e.rate)}</div>
-      <div>Congés ${num(inputs(e, `${r.y}-${String(r.m).padStart(2, '0')}`).vac)} j · Maladie ${r.pn.days} j · Gain horaire moyen ${avgHourOf(e).toFixed(4)} €</div></div>
+    <div class="who note"><div>Jours ouvrables du mois : ${r.cal.wd} (fériés ${r.cal.hol}) · ${e.payType === 'net' ? 'Net fixe convenu ' + eur(e.net) : e.payType === 'month' ? 'Salaire mensuel ' + eur(e.salary) : 'Taux horaire ' + eur(e.rate)}</div>
+      <div>Congés ${num(inputs(e, `${r.y}-${String(r.m).padStart(2, '0')}`).vac)} j · Maladie ${r.pn.days} j${e.payType === 'net' ? '' : ' · Gain horaire moyen ' + avgHourOf(e).toFixed(4) + ' €'}</div></div>
     <div class="cols"><div><table>
       <tr class="h"><td>Rémunération · Príjem</td><td class="n">€</td></tr>
       ${r.lines.map(l => line(l[0], l[1], l[2], l[3])).join('')}
@@ -540,6 +587,7 @@ function slipHTML(r) {
       ${r.meal.mode === 'cash' ? line('Contribution repas', 'Finančný príspevok na stravovanie', `${r.meal.days} j`, r.meal.er) : ''}
       ${r.meal.mode === 'ticket' ? line('Tickets restaurant, part salarié', 'Stravné lístky – podiel zamestnanca', `${r.meal.days} × ${fmt(r.meal.value)}`, r.meal.ee, true) : ''}
       ${r.ded ? line('Autres retenues', 'Iné zrážky', '', r.ded, true) : ''}
+      ${r.fixedNet ? `<tr><td colspan="2" class="sk">Salaire net convenu ${fmt(r.fixedNet.agreed)} €${r.fixedNet.bonus ? ' + prime nette ' + fmt(r.fixedNet.bonus) + ' €' : ''}${r.bonusT ? ' + bonus enfants' : ''}</td></tr>` : ''}
       <tr class="net"><td>Net à payer <span class="sk">Na výplatu</span></td><td class="n">${fmt(r.net)} €</td></tr>
       ${e.iban ? `<tr><td colspan="2" class="sk">Virement sur ${esc(e.iban)}</td></tr>` : ''}
       <tr class="h"><td>Charges patronales · Odvody zamestnávateľa</td><td class="n"></td></tr>
