@@ -36,6 +36,7 @@
   table.t td { border-bottom: 1px solid #e3e9e5; padding: 4px 6px; vertical-align: middle; }
   table.t td.n, table.t th.n { text-align: right; white-space: nowrap; }
   table.t tr.tot td { font-weight: bold; background: var(--soft); border-top: 2px solid var(--g); }
+  table.t input:disabled { background: #eceff1; border-color: #e0e4e2; }
   table.t input, table.t select { width: 100%; min-width: 48px; padding: 3px 4px; border: 1px solid #c3d0c8; border-radius: 3px; font: 12.5px Arial, sans-serif; }
   table.t input.num { text-align: right; }
   .scroll { overflow-x: auto; }
@@ -112,7 +113,13 @@
     <h3 style="margin-top:0">Employeur (zamestnávateľ)</h3>
     <div class="grid" id="employerForm"></div>
   </div>
-  <div class="row"><button class="b pri" onclick="editEmp(null)">➕ Ajouter un employé</button></div>
+  <div class="card"><h3 style="margin-top:0">➕ Ajout rapide : le nom et le salaire net suffisent</h3>
+    <div class="row"><label class="fld">Nom<input id="qName" style="padding:5px 6px;border:1px solid #bfcdc5;border-radius:4px;min-width:200px"></label>
+      <label class="fld">Salaire net fixe (€)<input id="qNet" type="number" step="0.01" style="padding:5px 6px;border:1px solid #bfcdc5;border-radius:4px;width:130px"></label>
+      <label class="fld">Caisse santé<select id="qIns" style="padding:5px 6px"><option value="25">VšZP</option><option value="24">Dôvera</option><option value="27">Union</option></select></label>
+      <button class="b pri" style="align-self:flex-end" onclick="quickAdd()">Ajouter</button></div>
+    <p class="note" style="margin-bottom:0">Le programme calcule le brut, les cotisations, l'impôt, la fiche de paie et les déclarations. L'ambassade paie tout (cotisations sociales, assurance santé, impôt). Sans enfant ni II. pilier par défaut : si besoin, ouvrez « Modifier » pour ajouter des enfants ou d'autres détails.</p></div>
+  <div class="row"><button class="b" onclick="editEmp(null)">Ajouter avec tous les détails…</button></div>
   <div class="scroll"><table class="t" id="empTable"></table></div>
   <div id="empEdit"></div>
 </section>
@@ -207,7 +214,9 @@ const MONTHS_SK = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'j�
 // ===================== state =====================
 const KEY = 'paieSlovaquie';
 const clone = o => JSON.parse(JSON.stringify(o));
-let DB = {params: clone(P2026), employer: {name: '', addr: '', ico: '', dic: '', sp: '', bank: ''}, employees: [], periods: {}};
+let DB = {params: clone(P2026), employer: {name: "Ambassade d'Algérie", addr: 'Bratislava', ico: '', dic: '', sp: '', bank: '', payDay: 20}, employees: [], periods: {}};
+// first opening on a computer: the embassy's staff as set up so far (only the net is needed, the program does the rest)
+const SEED = [{name: 'A', net: 2000, insurer: '25', dss: false, children: []}];
 let CUR = {y: 2026, m: 1};
 const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
@@ -225,7 +234,9 @@ function save() {
   catch (e) { $('saved').textContent = '⚠ Sauvegarde impossible : enregistrez dans un fichier'; }
 }
 function load() {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); DB = {...DB, ...d, params: {...clone(P2026), ...(d.params || {})}}; } } catch (e) {}
+  let s = null;
+  try { s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); DB = {...DB, ...d, employer: {...DB.employer, ...(d.employer || {})}, params: {...clone(P2026), ...(d.params || {})}}; } } catch (e) {}
+  if (!s) { DB.employees = SEED.map(x => Object.assign(blankEmp(), x)); save(); }
 }
 function saveFile() {
   const a = document.createElement('a');
@@ -277,8 +288,9 @@ function blankEmp() {
 function renderEmployer() {
   const e = DB.employer, f = (k, l, ph) => `<label>${l}<input data-er="${k}" value="${esc(e[k])}" placeholder="${ph || ''}"></label>`;
   $('employerForm').innerHTML = f('name', 'Nom', 'Ambassade …') + f('addr', 'Adresse', 'Rue, PSČ, Bratislava') + f('ico', 'IČO / identifiant') + f('dic', 'DIČ (n° fiscal)') +
-    f('sp', 'Variabilný symbol Sociálna poisťovňa') + f('bank', 'IBAN de l\'employeur');
-  $('employerForm').querySelectorAll('input').forEach(i => i.oninput = () => { DB.employer[i.dataset.er] = i.value; save(); });
+    f('sp', 'Variabilný symbol Sociálna poisťovňa') + f('bank', 'IBAN de l\'employeur') +
+    `<label>Jour de paie habituel (du mois même)<input data-er="payDay" type="number" min="1" max="31" value="${esc(e.payDay || 20)}"></label>`;
+  $('employerForm').querySelectorAll('input').forEach(i => i.oninput = () => { DB.employer[i.dataset.er] = i.dataset.er === 'payDay' ? Math.min(31, Math.max(1, num(i.value) || 20)) : i.value; save(); });
 }
 function renderEmpTable() {
   const rows = DB.employees.map(e => `<tr><td><b>${esc(e.name) || '<i>sans nom</i>'}</b><br><span class="note">${esc(e.job)}</span></td>
@@ -340,6 +352,12 @@ function renderKids() {
     <input type="date" value="${esc(k.birth)}" oninput="KIDS[${i}].birth=this.value"> <button class="b danger" onclick="KIDS.splice(${i},1);renderKids()">✕</button></div>`).join('') || '<p class="note">Aucun enfant déclaré.</p>';
 }
 function addKid() { KIDS.push({name: '', birth: ''}); renderKids(); }
+function quickAdd() {
+  const name = $('qName').value.trim(), net = num($('qNet').value);
+  if (!name || !(net > 0)) { alert('Indiquez le nom et le salaire net.'); return; }
+  DB.employees.push(Object.assign(blankEmp(), {name, net, insurer: $('qIns').value}));
+  $('qName').value = ''; $('qNet').value = ''; save(); renderAll();
+}
 function delEmp(id) { const e = DB.employees.find(x => x.id === id); if (!confirm(`Supprimer ${e.name} et ses données de paie ?`)) return; DB.employees = DB.employees.filter(x => x.id !== id); save(); renderAll(); }
 
 // ===================== monthly inputs =====================
@@ -503,7 +521,7 @@ function calcNet(e, y, m, inp, r, c) {
   const got = round2(gross - r.eeS - r.hEe - r.adv + r.bonusT);
   if (got > target) r.warn.push(`Net fixe : arrondis légaux, le net obtenu est ${fmt(got)} € (${fmt(got - target)} € de plus que convenu).`);
   if (gross < P.minWage * e.hours / 40) r.warn.push('Brut calculé inférieur au salaire minimum.');
-  const ignored = ['vac', 'unpaid', 'ot', 'night', 'sat', 'sun', 'holw', 'other'].filter(k => num(inp[k]));
+  const ignored = NET_IGNORED.filter(k => num(inp[k]));
   if (c.pnDays) r.warn.push(`Net fixe : ${c.pnDays} jour(s) de maladie sans effet sur le salaire (l'ambassade maintient le salaire au lieu de l'indemnité légale).` +
     (c.pnSP ? ` Au-delà du ${P.pn.days}e jour, la Sociálna poisťovňa peut verser en plus des indemnités (nemocenské) à l'employé : à régler avec lui.` : ''));
   if (ignored.length) r.warn.push('Net fixe : congés, absences, heures et majorations saisis sont ignorés (seule la prime, en net, est ajoutée).');
@@ -527,6 +545,7 @@ function periodResults(y, m) {
 }
 
 // ===================== monthly payroll tab =====================
+const NET_IGNORED = ['vac', 'unpaid', 'ot', 'night', 'sat', 'sun', 'holw', 'other'];
 function renderPaie() {
   const cal = monthCal(CUR.y, CUR.m);
   $('paieTitle').textContent = `– ${MONTHS[CUR.m - 1]} ${CUR.y}`;
@@ -536,7 +555,8 @@ function renderPaie() {
   $('paieTable').innerHTML = `<tr><th>Employé</th>${INFIELDS.map(f => `<th title="${esc(f[2])}">${esc(f[1])}</th>`).join('')}</tr>` +
     emps.map(e => { const i = inputs(e); return `<tr><td><b>${esc(e.name)}</b></td>${INFIELDS.map(([k]) => {
       const date = k === 'pnFrom' || k === 'pnTo';
-      return `<td><input class="${date ? '' : 'num'}" type="${date ? 'date' : 'text'}" inputmode="decimal" data-e="${e.id}" data-k="${k}" value="${esc(i[k] ?? '')}" ${k === 'mealDays' ? 'placeholder="auto"' : ''}></td>`; }).join('')}</tr>`; }).join('');
+      const off = e.payType === 'net' && NET_IGNORED.includes(k);
+      return `<td><input class="${date ? '' : 'num'}" type="${date ? 'date' : 'text'}" inputmode="decimal" data-e="${e.id}" data-k="${k}" value="${esc(i[k] ?? '')}" ${k === 'mealDays' ? 'placeholder="auto"' : ''}${off ? ' disabled title="Sans effet : salaire net fixe"' : ''}${k === 'bonus' && e.payType === 'net' ? ' placeholder="net"' : ''}></td>`; }).join('')}</tr>`; }).join('');
   $('paieTable').querySelectorAll('input').forEach(inp => inp.onchange = () => { setInput(inp.dataset.e, inp.dataset.k, inp.value); renderResults(); });
   renderResults();
 }
@@ -739,7 +759,8 @@ $('pMonth').innerHTML = MONTHS.map((m, i) => `<option value="${i + 1}">${m}</opt
 function setPeriod() {
   CUR = {y: Math.max(2000, num($('pYear').value) || 2026), m: num($('pMonth').value) || 1};
   const p = DB.periods[pkey()];
-  $('pPay').value = (p && p.payday) || iso(new Date(CUR.y, CUR.m, 10));       // default: the 10th of the following month
+  const pd = Math.min(DB.employer.payDay || 20, new Date(CUR.y, CUR.m, 0).getDate());
+  $('pPay').value = (p && p.payday) || iso(new Date(CUR.y, CUR.m - 1, pd));      // default: the embassy's usual pay day of the month
   renderAll();
 }
 $('pMonth').onchange = setPeriod; $('pYear').onchange = setPeriod;
