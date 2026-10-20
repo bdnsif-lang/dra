@@ -210,7 +210,8 @@
 <section class="tab" id="tab-cert">
   <div class="noprint">
     <h2>📜 Work certificate · Potvrdenie o zamestnaní</h2>
-    <p class="note">Issued to every employee whose employment ends, on the last day, without being asked (§ 75 ods. 2 Zákonníka práce) · Zamestnávateľ ho vydá pri skončení pracovného pomeru bez žiadosti zamestnanca.</p>
+    <p class="note"><b>Leaving</b>: issued on the last day of employment without being asked (§ 75 ods. 2 Zákonníka práce) · pri skončení pracovného pomeru.<br>
+      <b>Still employed</b>: issued on the employee's request, e.g. for a bank, a landlord, a visa or a residence permit · na žiadosť zamestnanca (banka, prenájom, víza, pobyt).</p>
     <div class="grid" id="certForm"></div>
     <div id="certWarn"></div>
     <div class="row"><button class="b pri" onclick="printRZ('certDoc')">🖨 Print · Tlačiť</button>
@@ -988,7 +989,20 @@ function renderCert() {
   const today = iso(new Date());
   const v = k => esc(C[k] ?? ''), t = (k, en, sk, type, ph) => `<label>${en} · <span style="font-weight:normal">${sk}</span><input type="${type || 'text'}" data-c="${k}" value="${v(k)}" placeholder="${ph || ''}"></label>`;
   const yn = (k, en, sk) => `<label>${en} · <span style="font-weight:normal">${sk}</span><select data-c="${k}"><option value="no"${C[k] !== 'yes' ? ' selected' : ''}>No · Nie</option><option value="yes"${C[k] === 'yes' ? ' selected' : ''}>Yes · Áno</option></select></label>`;
-  $('certForm').innerHTML = `<label>Employee · Zamestnanec<select id="certWho">${emps.map(x => `<option value="${x.id}"${x.id === sel ? ' selected' : ''}>${esc(x.name)}${x.end ? ' (left · skončil)' : ''}</option>`).join('')}</select></label>
+  const kind = C.kind || (e.end ? 'leave' : 'current');
+  const sl = (k, en, sk, opts) => `<label>${en} · <span style="font-weight:normal">${sk}</span><select data-c="${k}">${opts.map(([val, txt]) => `<option value="${val}"${(C[k] || opts[0][0]) === val ? ' selected' : ''}>${txt}</option>`).join('')}</select></label>`;
+  const head = `<label>Employee · Zamestnanec<select id="certWho">${emps.map(x => `<option value="${x.id}"${x.id === sel ? ' selected' : ''}>${esc(x.name)}${x.end ? ' (left · skončil)' : ''}</option>`).join('')}</select></label>
+    <label>Certificate · Potvrdenie<select id="certKind"><option value="current"${kind === 'current' ? ' selected' : ''}>Still employed (on request) · Trvajúci pracovný pomer</option><option value="leave"${kind === 'leave' ? ' selected' : ''}>Leaving (§ 75) · Skončenie pracovného pomeru</option></select></label>`;
+  if (kind === 'current') {
+    $('certForm').innerHTML = head + `${t('start', 'Start of employment', 'Vznik pracovného pomeru', 'date')}
+      ${t('work', 'Position', 'Pracovná pozícia', 'text', e.job || 'e.g. driver · napr. vodič')}
+      ${sl('contract', 'Contract', 'Pracovná zmluva', [['indef', 'Permanent · na dobu neurčitú'], ['fixed', 'Fixed-term · na dobu určitú']])}${t('fixedTo', 'If fixed-term: until', 'ak na dobu určitú: do', 'date')}
+      ${sl('probation', 'Probation', 'Skúšobná doba', [['done', 'Finished · uplynula'], ['running', 'Still running · plynie']])}
+      ${sl('notice', 'Notice', 'Výpoveď', [['none', 'Not under notice · nie je vo výpovednej lehote'], ['notice', 'Under notice · je vo výpovednej lehote']])}
+      ${sl('income', 'Salary on the certificate', 'Uviesť príjem', [['none', 'No salary · bez príjmu'], ['net3', 'Average net, last 3 months · priemerný čistý (3 mes.)'], ['net6', 'Average net, last 6 months · priemerný čistý (6 mes.)'], ['net12', 'Average net, last 12 months · priemerný čistý (12 mes.)'], ['gross', 'Monthly gross salary · hrubá mesačná mzda']])}
+      ${t('purpose', 'Purpose', 'Účel potvrdenia', 'text', 'e.g. for the bank · napr. pre banku')}
+      ${t('place', 'Place', 'Miesto', 'text', 'Bratislava')}${t('date', 'Date of issue', 'Dátum vystavenia', 'date', today)}${t('signer', 'Signed by (name, function)', 'Podpísal (meno, funkcia)', 'text')}`;
+  } else $('certForm').innerHTML = head + `
     ${t('start', 'Start of employment', 'Vznik pracovného pomeru', 'date')}${t('end', 'End of employment', 'Skončenie pracovného pomeru', 'date')}
     ${t('work', 'Type of work', 'Druh vykonávaných prác', 'text', e.job || 'e.g. driver · napr. vodič')}
     ${yn('ded', 'Wage deductions in progress', 'Vykonávajú sa zrážky zo mzdy')}${t('dedText', 'If yes: creditor, amount, order', 'v čí prospech, výška, poradie', 'text')}
@@ -1001,6 +1015,8 @@ function renderCert() {
   if (!C.start && e.start) C.start = e.start; if (!C.end && e.end) C.end = e.end; if (!C.work && e.job) C.work = e.job;
   $('certForm').querySelectorAll('[data-c]').forEach(i => { if (C[i.dataset.c] !== undefined && i.tagName === 'INPUT') i.value = C[i.dataset.c]; i.onchange = () => { C[i.dataset.c] = i.value; save(); renderCert(); }; });
   $('certWho').onchange = ev => { window.CERTWHO = ev.target.value; renderCert(); };
+  $('certKind').onchange = ev => { C.kind = ev.target.value; save(); renderCert(); };
+  if (kind === 'current') { certCurrent(e, C); return; }
   const st = parseISO(C.start), en = parseISO(C.end), w = [];
   if (!st) w.push('Start date missing · Chýba dátum vzniku pracovného pomeru.'); if (!en) w.push('End date missing · Chýba dátum skončenia.');
   if (!C.work) w.push('Type of work missing · Chýba druh vykonávaných prác.'); if (!e.rc && !e.birth) w.push("The employee's rodné číslo or date of birth is missing · Chýba rodné číslo alebo dátum narodenia.");
@@ -1040,9 +1056,65 @@ function renderCert() {
     <li><b>Reference letter</b> (pracovný posudok): only if the employee asks, within 15 days · len na žiadosť zamestnanca, do 15 dní.</li>
     <li>Then click « Record the departure »: the employee stays in the files and drops out of the payroll from the following month · potom kliknite « Zapísať skončenie ».</li></ul>`;
 }
+// certificate for an employee still working (on request: bank, lease, visa, residence permit)
+function certCurrent(e, C) {
+  const E = DB.employer, fd = d => d ? d.toLocaleDateString('sk-SK') : '……………', issue = parseISO(C.date) || new Date(), st = parseISO(C.start), w = [];
+  if (!st) w.push('Start date missing · Chýba dátum vzniku pracovného pomeru.'); if (!C.work) w.push('Position missing · Chýba pracovná pozícia.');
+  if (!e.rc && !e.birth) w.push("The employee's rodné číslo or date of birth is missing · Chýba rodné číslo alebo dátum narodenia.");
+  if (C.contract === 'fixed' && !C.fixedTo) w.push('Fixed-term contract: enter the end date · Zadajte dátum, do ktorého je zmluva uzavretá.');
+  // income: completed months before the month of issue
+  let incTxt = '', incEn = '';
+  if (C.income && C.income !== 'none') {
+    if (C.income === 'gross') {
+      const r = calc(e, issue.getFullYear(), issue.getMonth() + 1, {});
+      incTxt = `${fmt(r.gross)} € hrubá mesačná mzda`; incEn = `${fmt(r.gross)} € gross monthly salary`;
+    } else {
+      const n = {net3: 3, net6: 6, net12: 12}[C.income], list = [];
+      for (let i = 1; list.length < n && i <= n + 24; i++) {
+        const d = new Date(issue.getFullYear(), issue.getMonth() - i, 1), last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        if (st && st > last) break;
+        if (d.getFullYear() < DB.params.year) { w.push(`Average limited to ${DB.params.year}: the program has no rates for earlier years · Priemer len za rok ${DB.params.year}.`); break; }
+        list.push(calc(e, d.getFullYear(), d.getMonth() + 1, inputs(e, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)));
+      }
+      if (!list.length) w.push('No completed month of pay before the date of issue · Pred dátumom vystavenia nie je žiadny vyplatený mesiac.');
+      else {
+        const avg = round2(list.reduce((a, r) => a + r.net, 0) / list.length), from = list[list.length - 1], to = list[0];
+        if (list.length < n) w.push(`Only ${list.length} month(s) of pay so far · Zatiaľ len ${list.length} mesiac(e).`);
+        const per = `${MONTHS_SK[from.m - 1]} ${from.y} – ${MONTHS_SK[to.m - 1]} ${to.y}`, perEn = `${MONTHS_EN[from.m - 1]} ${from.y} – ${MONTHS_EN[to.m - 1]} ${to.y}`;
+        incTxt = `${fmt(avg)} € priemerný čistý mesačný príjem za ${list.length} mes. (${per})`; incEn = `${fmt(avg)} € average net monthly income over ${list.length} month(s) (${perEn})`;
+      }
+    }
+  }
+  $('certWarn').innerHTML = w.length ? `<div class="warn">${w.map(esc).join('<br>')}</div>` : '';
+  const row = (sk, en, val) => `<tr><td>${sk}<br><span class="en">${en}</span></td><td style="text-align:right">${val}</td></tr>`;
+  $('certDoc').innerHTML = `<div class="doc">
+    <div class="hd"><div><b>${esc(E.nameSk || E.name)}</b>${E.nameSk && E.name ? `<br><span class="en">${esc(E.name)}</span>` : ''}<br>${esc(E.addr)}${E.ico ? '<br>IČO ' + esc(E.ico) : ''}</div>
+      <div style="text-align:right;font-size:10.5px">${esc(C.place || 'Bratislava')}, ${fd(issue)}</div></div>
+    <h4 style="text-align:center;font-size:17px;margin:14px 0 2px">POTVRDENIE O ZAMESTNANÍ</h4>
+    <p style="text-align:center;margin:0 0 10px"><span class="en">CERTIFICATE OF EMPLOYMENT</span></p>
+    <p>Zamestnávateľ potvrdzuje, že · <span class="en">The employer certifies that</span></p>
+    <table>${row('Meno a priezvisko', 'Name', `<b>${esc(e.name)}</b>`)}
+      ${row('Rodné číslo / dátum narodenia', 'Birth number / date of birth', `${esc(e.rc) || ''}${e.rc && e.birth ? ' / ' : ''}${e.birth ? fd(parseISO(e.birth)) : ''}` || '—')}
+      ${row('Trvalý pobyt', 'Address', esc(e.addr) || '—')}</table>
+    <p>je u neho v pracovnom pomere · <span class="en">is employed by it</span></p>
+    <table>
+      ${row('od', 'since', `<b>${fd(st)}</b>`)}
+      ${row('Pracovná pozícia', 'Position', esc(C.work) || '—')}
+      ${row('Pracovná zmluva', 'Employment contract', C.contract === 'fixed' ? `na dobu určitú do ${fd(parseISO(C.fixedTo))} · <span class="en">fixed-term until ${fd(parseISO(C.fixedTo))}</span>` : 'na dobu neurčitú · <span class="en">permanent (indefinite term)</span>')}
+      ${row('Pracovný čas', 'Working time', `${e.hours >= 40 ? 'plný pracovný úväzok' : 'kratší pracovný čas'}, ${e.hours} h týždenne · <span class="en">${e.hours >= 40 ? 'full time' : 'part time'}, ${e.hours} h per week</span>`)}
+      ${row('Skúšobná doba', 'Probation period', C.probation === 'running' ? 'plynie · <span class="en">still running</span>' : 'uplynula · <span class="en">completed</span>')}
+      ${row('Výpoveď', 'Notice', C.notice === 'notice' ? 'je vo výpovednej lehote · <span class="en">under notice</span>' : 'nie je vo výpovednej lehote · <span class="en">not under notice</span>')}
+      ${incTxt ? row('Príjem (so súhlasom zamestnanca)', 'Income (with the employee\'s consent)', `${incTxt}<br><span class="en">${incEn}</span>`) : ''}
+      ${C.purpose ? row('Účel', 'Purpose', esc(C.purpose)) : ''}
+    </table>
+    <p style="margin-top:10px">Potvrdenie sa vydáva na žiadosť zamestnanca. · <span class="en">This certificate is issued at the employee's request.</span></p>
+    <div class="sign" style="margin-top:40px"><div>Pečiatka a podpis zamestnávateľa${C.signer ? '<br>' + esc(C.signer) : ''}<br><span class="en">Employer's stamp and signature</span></div><span></span></div></div>`;
+  $('certTodo').innerHTML = `<p class="note" style="margin:0">Income is shown only with the employee's consent; the average net is calculated from the payroll of the completed months before the date of issue · Príjem sa uvádza len so súhlasom zamestnanca; priemer sa počíta z miezd za ukončené mesiace pred dátumom vystavenia.</p>`;
+}
 function certSaveEnd() {
   const e = DB.employees.find(x => x.id === (window.CERTWHO || (DB.employees.find(x => x.end) || DB.employees[0] || {}).id)); if (!e) return;
   const C = DB.certs[e.id] || {};
+  if ((C.kind || (e.end ? 'leave' : 'current')) !== 'leave') { alert('Choose « Leaving » first · Najprv zvoľte « Skončenie pracovného pomeru ».'); return; }
   if (!C.end) { alert('Enter the end date first · Najprv zadajte dátum skončenia.'); return; }
   e.end = C.end; if (C.start && !e.start) e.start = C.start; if (C.work && !e.job) e.job = C.work;
   save(); renderAll(); alert(`${e.name}: end of employment recorded on ${parseISO(C.end).toLocaleDateString('fr-FR')} · skončenie zapísané.`);
