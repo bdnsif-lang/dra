@@ -87,8 +87,8 @@
     .slip:last-child { page-break-after: auto; break-after: auto; }
     body.printDecl section.tab { display: none !important; }
     body.printRZ section.tab { display: none !important; }
-    body.printRZ #tab-rz, body.printRZ #tab-pot { display: block !important; }
-    body.printRZ #tab-rz .noprint, body.printRZ #tab-pot .noprint, body.printRZ .doc:not(.go) { display: none !important; }
+    body.printRZ #tab-rz, body.printRZ #tab-pot, body.printRZ #tab-cert { display: block !important; }
+    body.printRZ #tab-rz .noprint, body.printRZ #tab-pot .noprint, body.printRZ #tab-cert .noprint, body.printRZ .doc:not(.go) { display: none !important; }
     body.printSim section.tab { display: none !important; } body.printSim #tab-sim { display: block !important; } body.printSim #tab-sim .noprint { display: none !important; }
     body.printSim .simblock { break-after: page; page-break-after: always; } body.printSim .simblock:last-child { break-after: auto; page-break-after: auto; }
     body.printSim .doc { border: 0; margin: 0; padding: 0; font-size: 9.5px; line-height: 1.25; max-width: none; }
@@ -128,6 +128,7 @@
   <button data-t="annee">📊 Récapitulatif annuel</button>
   <button data-t="rz">📑 Annual tax · Ročné zúčtovanie</button>
   <button data-t="pot">🧾 Tax confirmation · Potvrdenie</button>
+  <button data-t="cert">📜 Work certificate · Potvrdenie o zamestnaní</button>
   <button data-t="sim">🧪 Simulation</button>
   <button data-t="param">⚙ Paramètres et sources</button>
 </nav>
@@ -204,6 +205,19 @@
     <div class="row"><button class="b pri" onclick="printRZ('potDoc')">🖨 Print · Tlačiť</button></div>
   </div>
   <div id="potDoc"></div>
+</section>
+
+<section class="tab" id="tab-cert">
+  <div class="noprint">
+    <h2>📜 Work certificate · Potvrdenie o zamestnaní</h2>
+    <p class="note">Issued to every employee whose employment ends, on the last day, without being asked (§ 75 ods. 2 Zákonníka práce) · Zamestnávateľ ho vydá pri skončení pracovného pomeru bez žiadosti zamestnanca.</p>
+    <div class="grid" id="certForm"></div>
+    <div id="certWarn"></div>
+    <div class="row"><button class="b pri" onclick="printRZ('certDoc')">🖨 Print · Tlačiť</button>
+      <button class="b" onclick="certSaveEnd()">✔ Record the departure in the employee file · Zapísať skončenie</button></div>
+    <div class="card" id="certTodo"></div>
+  </div>
+  <div id="certDoc"></div>
 </section>
 
 <section class="tab" id="tab-sim">
@@ -753,7 +767,7 @@ function renderDecl() {
   h += `<h3>4 · Salaires</h3>` + tbl(chk('net_pay', 'Virer les salaires nets', pay, S(r => r.net), 'Le jour de paie convenu au contrat (au plus tard à la fin du mois suivant).'));
   h += `<h3>À tout moment de l'année</h3><ul class="note">
     <li><b>Embauche</b> : déclarer l'employé à la Sociálna poisťovňa <b>avant le début du travail</b> (registračný list FO), et à sa caisse de santé dans les 8 jours ouvrables.</li>
-    <li><b>Départ</b> : radier l'employé de la Sociálna poisťovňa et de la caisse de santé ; lui remettre ses attestations (potvrdenie o zdaniteľných príjmoch). Depuis 2026, l'evidenčný list dôchodkového poistenia (ELDP) n'est plus exigé.</li>
+    <li><b>Départ</b> : remettre le certificat de travail le dernier jour (onglet 📜 Work certificate) ; radier l'employé de la Sociálna poisťovňa et de la caisse de santé dans les 8 jours ; lui remettre ses attestations (potvrdenie o zdaniteľných príjmoch). Depuis 2026, l'evidenčný list dôchodkového poistenia (ELDP) n'est plus exigé.</li>
     <li><b>Changement</b> (II. pilier, pension, ZŤP, caisse de santé, enfants) : mettre à jour la fiche de l'employé avant la paie du mois concerné.</li>
     <li><b>Maladie au-delà de ${DB.params.pn.days} jours</b> : la Sociálna poisťovňa paie les indemnités ; l'arrêt de travail est transmis électroniquement (ePN).</li></ul>`;
   h += `<h3>Chaque année</h3><ul class="note">
@@ -964,6 +978,76 @@ function potDocHTML(e, y, A) {
 }
 
 
+
+// ===================== work certificate on leaving (potvrdenie o zamestnaní, § 75 ods. 2 Zákonníka práce) =====================
+function renderCert() {
+  const emps = DB.employees; DB.certs = DB.certs || {};
+  if (!emps.length) { $('certForm').innerHTML = '<p class="note">No employee · Žiadny zamestnanec.</p>'; $('certDoc').innerHTML = $('certTodo').innerHTML = ''; return; }
+  const sel = window.CERTWHO && emps.some(e => e.id === CERTWHO) ? CERTWHO : (emps.find(e => e.end) || emps[0]).id;
+  const e = emps.find(x => x.id === sel), C = DB.certs[e.id] || (DB.certs[e.id] = {});
+  const today = iso(new Date());
+  const v = k => esc(C[k] ?? ''), t = (k, en, sk, type, ph) => `<label>${en} · <span style="font-weight:normal">${sk}</span><input type="${type || 'text'}" data-c="${k}" value="${v(k)}" placeholder="${ph || ''}"></label>`;
+  const yn = (k, en, sk) => `<label>${en} · <span style="font-weight:normal">${sk}</span><select data-c="${k}"><option value="no"${C[k] !== 'yes' ? ' selected' : ''}>No · Nie</option><option value="yes"${C[k] === 'yes' ? ' selected' : ''}>Yes · Áno</option></select></label>`;
+  $('certForm').innerHTML = `<label>Employee · Zamestnanec<select id="certWho">${emps.map(x => `<option value="${x.id}"${x.id === sel ? ' selected' : ''}>${esc(x.name)}${x.end ? ' (left · skončil)' : ''}</option>`).join('')}</select></label>
+    ${t('start', 'Start of employment', 'Vznik pracovného pomeru', 'date')}${t('end', 'End of employment', 'Skončenie pracovného pomeru', 'date')}
+    ${t('work', 'Type of work', 'Druh vykonávaných prác', 'text', e.job || 'e.g. driver · napr. vodič')}
+    ${yn('ded', 'Wage deductions in progress', 'Vykonávajú sa zrážky zo mzdy')}${t('dedText', 'If yes: creditor, amount, order', 'v čí prospech, výška, poradie', 'text')}
+    ${yn('stay', 'Obligation to stay after training (§ 155)', 'Záväzok zotrvať v pracovnom pomere')}${t('stayText', 'If yes: details', 'podrobnosti', 'text')}
+    ${yn('odch', 'Retirement / disability payment paid (§ 76a)', 'Poskytnuté odchodné')}${t('odchAmt', 'If yes: amount (€)', 'suma', 'number')}
+    ${t('reason', 'How it ended (only with the employee\'s consent)', 'Spôsob skončenia (len so súhlasom)', 'text', 'e.g. dohodou · by agreement')}
+    ${t('extra', 'Other information (only with the employee\'s consent)', 'Iné údaje (len so súhlasom zamestnanca)', 'text')}
+    ${t('place', 'Place', 'Miesto', 'text', 'Bratislava')}${t('date', 'Date of issue', 'Dátum vystavenia', 'date', today)}${t('signer', 'Signed by (name, function)', 'Podpísal (meno, funkcia)', 'text')}`;
+  // defaults from the employee file
+  if (!C.start && e.start) C.start = e.start; if (!C.end && e.end) C.end = e.end; if (!C.work && e.job) C.work = e.job;
+  $('certForm').querySelectorAll('[data-c]').forEach(i => { if (C[i.dataset.c] !== undefined && i.tagName === 'INPUT') i.value = C[i.dataset.c]; i.onchange = () => { C[i.dataset.c] = i.value; save(); renderCert(); }; });
+  $('certWho').onchange = ev => { window.CERTWHO = ev.target.value; renderCert(); };
+  const st = parseISO(C.start), en = parseISO(C.end), w = [];
+  if (!st) w.push('Start date missing · Chýba dátum vzniku pracovného pomeru.'); if (!en) w.push('End date missing · Chýba dátum skončenia.');
+  if (!C.work) w.push('Type of work missing · Chýba druh vykonávaných prác.'); if (!e.rc && !e.birth) w.push("The employee's rodné číslo or date of birth is missing · Chýba rodné číslo alebo dátum narodenia.");
+  if (C.ded === 'yes' && !C.dedText) w.push('Deductions: say for whom, how much and in what order · Zrážky: uveďte v čí prospech, výšku a poradie.');
+  $('certWarn').innerHTML = w.length ? `<div class="warn">${w.map(esc).join('<br>')}</div>` : '';
+  const fd = d => d ? d.toLocaleDateString('sk-SK') : '……………', E = DB.employer;
+  const dur = st && en ? (() => { let mo = (en.getFullYear() - st.getFullYear()) * 12 + en.getMonth() - st.getMonth(); let dd = en.getDate() - st.getDate() + 1; if (dd < 0) { mo--; dd += new Date(en.getFullYear(), en.getMonth(), 0).getDate(); } if (dd >= new Date(en.getFullYear(), en.getMonth() + 1, 0).getDate()) { mo++; dd = 0; } return `${Math.floor(mo / 12)} r. ${mo % 12} mes.${dd ? ' ' + dd + ' d.' : ''} · ${Math.floor(mo / 12)} y ${mo % 12} m${dd ? ' ' + dd + ' d' : ''}`; })() : '';
+  const row = (no, sk, en2, val) => `<tr><td class="no">${no}</td><td>${sk}<br><span class="en">${en2}</span></td><td style="text-align:right">${val}</td></tr>`;
+  $('certDoc').innerHTML = `<div class="doc">
+    <div class="hd"><div><b>${esc(E.nameSk || E.name)}</b>${E.nameSk && E.name ? `<br><span class="en">${esc(E.name)}</span>` : ''}<br>${esc(E.addr)}${E.ico ? '<br>IČO ' + esc(E.ico) : ''}</div>
+      <div style="text-align:right;font-size:10.5px">${esc(C.place || 'Bratislava')}, ${fd(parseISO(C.date) || new Date())}</div></div>
+    <h4 style="text-align:center;font-size:17px;margin:14px 0 2px">POTVRDENIE O ZAMESTNANÍ</h4>
+    <p style="text-align:center;margin:0 0 4px"><span class="en">CERTIFICATE OF EMPLOYMENT</span><br><span style="font-size:10.5px">podľa § 75 ods. 2 zákona č. 311/2001 Z. z. Zákonník práce · <span class="en">under § 75(2) of the Slovak Labour Code</span></span></p>
+    <p>Zamestnávateľ potvrdzuje, že · <span class="en">The employer certifies that</span></p>
+    <table>${row('', 'Meno a priezvisko', 'Name', `<b>${esc(e.name)}</b>`)}
+      ${row('', 'Rodné číslo / dátum narodenia', 'Birth number / date of birth', `${esc(e.rc) || ''}${e.rc && e.birth ? ' / ' : ''}${e.birth ? fd(parseISO(e.birth)) : ''}` || '—')}
+      ${row('', 'Trvalý pobyt', 'Address', esc(e.addr) || '—')}</table>
+    <p>bol(a) u neho v pracovnom pomere · <span class="en">was employed by it</span></p>
+    <table>
+      ${row('a)', 'Doba trvania pracovného pomeru', 'Duration of employment', `od ${fd(st)} do ${fd(en)}${dur ? `<br><span class="en">${dur}</span>` : ''}`)}
+      ${row('b)', 'Druh vykonávaných prác', 'Type of work performed', esc(C.work) || '—')}
+      ${row('c)', 'Zrážky zo mzdy (v čí prospech, výška, poradie pohľadávky)', 'Wage deductions (creditor, amount, order of the claim)', C.ded === 'yes' ? `Áno · <span class="en">Yes</span><br>${esc(C.dedText)}` : 'Zo mzdy sa nevykonávajú zrážky · <span class="en">No deductions are made</span>')}
+      ${row('d)', 'Záväzok zotrvať v pracovnom pomere (§ 155)', 'Obligation to remain in employment (§ 155)', C.stay === 'yes' ? `Áno · <span class="en">Yes</span><br>${esc(C.stayText)}` : 'Nie · <span class="en">No</span>')}
+      ${row('e)', 'Poskytnutie odchodného (§ 76a)', 'Retirement / disability payment (§ 76a)', C.odch === 'yes' ? `Áno · <span class="en">Yes</span>${num(C.odchAmt) ? ', ' + eur(num(C.odchAmt)) : ''}` : 'Nie · <span class="en">No</span>')}
+      ${C.reason ? row('', 'Spôsob skončenia pracovného pomeru (so súhlasom zamestnanca)', 'How the employment ended (with the employee\'s consent)', esc(C.reason)) : ''}
+      ${C.extra ? row('', 'Ďalšie údaje (so súhlasom zamestnanca)', 'Other information (with the employee\'s consent)', esc(C.extra)) : ''}
+    </table>
+    <div class="sign" style="margin-top:40px"><div>Pečiatka a podpis zamestnávateľa${C.signer ? '<br>' + esc(C.signer) : ''}<br><span class="en">Employer's stamp and signature</span></div>
+      <div>Prevzal(a) zamestnanec (dátum, podpis)<br><span class="en">Received by the employee (date, signature)</span></div></div></div>`;
+  const endD = en, w8 = d => d ? fdate(nextWorkday(addDays(d, 8))) : '……';
+  $('certTodo').innerHTML = `<h3 style="margin-top:0">When someone leaves · Pri skončení pracovného pomeru</h3><ul class="note" style="margin:0;padding-left:18px">
+    <li><b>Last day</b>: hand over this work certificate, signed · v posledný deň odovzdať potvrdenie o zamestnaní.</li>
+    <li><b>Final pay</b>: salary for the last month, plus pay for leave not taken (náhrada mzdy za nevyčerpanú dovolenku) · posledná výplata a náhrada za nevyčerpanú dovolenku.</li>
+    <li><b>Sociálna poisťovňa</b>: deregister the employee (registračný list FO, odhláška) within 8 days, by ${w8(endD)} · odhlásiť do 8 dní.</li>
+    <li><b>${esc(INSURERS[e.insurer] || 'Health insurer')}</b>: report the end of employment within 8 working days · oznámiť zdravotnej poisťovni do 8 pracovných dní.</li>
+    <li><b>Tax confirmation</b> (potvrdenie o zdaniteľných príjmoch, tab 🧾): on request, or by 10 March of the next year · na žiadosť, inak do 10. marca.</li>
+    <li><b>Reference letter</b> (pracovný posudok): only if the employee asks, within 15 days · len na žiadosť zamestnanca, do 15 dní.</li>
+    <li>Then click « Record the departure »: the employee stays in the files and drops out of the payroll from the following month · potom kliknite « Zapísať skončenie ».</li></ul>`;
+}
+function certSaveEnd() {
+  const e = DB.employees.find(x => x.id === (window.CERTWHO || (DB.employees.find(x => x.end) || DB.employees[0] || {}).id)); if (!e) return;
+  const C = DB.certs[e.id] || {};
+  if (!C.end) { alert('Enter the end date first · Najprv zadajte dátum skončenia.'); return; }
+  e.end = C.end; if (C.start && !e.start) e.start = C.start; if (C.work && !e.job) e.job = C.work;
+  save(); renderAll(); alert(`${e.name}: end of employment recorded on ${parseISO(C.end).toLocaleDateString('fr-FR')} · skončenie zapísané.`);
+}
+
 // ===================== full simulation for one employee from the net salary =====================
 window.SIMKIDS = [];
 function simKid() { SIMKIDS.push({name: '', birth: ''}); renderSimKids(); }
@@ -1093,6 +1177,7 @@ function renderAll() {
   if (on === 'tab-rz') renderRZ();
   if (on === 'tab-pot') renderPot();
   if (on === 'tab-sim') initSim();
+  if (on === 'tab-cert') renderCert();
   if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
 }
 load();
