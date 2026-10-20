@@ -68,6 +68,13 @@
   .slip .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
   .slip .sk { color: #555; font-style: italic; }
   .slip .ft { margin-top: 6px; color: #444; font-size: 9.5px; }
+  .doc { background: #fff; border: 1px solid #9fb3a7; max-width: 190mm; margin: 14px auto; padding: 8mm 9mm; font-size: 11.5px; line-height: 1.4; color: #000; }
+  .doc h4 { margin: 0 0 2px; font-size: 15px; color: var(--g); } .doc .sk { color: #555; font-style: italic; }
+  .doc table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin: 6px 0; }
+  .doc td, .doc th { padding: 3px 5px; border-bottom: 1px dotted #c9d4cd; text-align: left; vertical-align: top; } .doc td.n, .doc th.n { text-align: right; white-space: nowrap; }
+  .doc th { background: #e6f1ea; color: var(--g); } .doc tr.s td { font-weight: bold; } .doc tr.res td { font-weight: bold; font-size: 13px; background: #fff3c4; border-top: 2px solid #000; }
+  .doc .hd { display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--g); padding-bottom: 6px; margin-bottom: 8px; }
+  .doc .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 28px; } .doc .sign div { border-top: 1px solid #000; padding-top: 3px; font-size: 10.5px; }
   @media print {
     @page { size: A4 portrait; margin: 8mm; }
     html, body { background: #fff; }
@@ -76,6 +83,9 @@
     .slip { border: 0; margin: 0 auto; page-break-after: always; break-after: page; width: auto; }
     .slip:last-child { page-break-after: auto; break-after: auto; }
     body.printDecl section.tab { display: none !important; }
+    body.printRZ section.tab { display: none !important; }
+    body.printRZ #tab-rz { display: block !important; } body.printRZ #tab-rz .noprint, body.printRZ #tab-rz .doc:not(.go) { display: none !important; }
+    body.printRZ .doc { border: 0; margin: 0; }
     body.printDecl #tab-decl { display: block !important; }
     body.printDecl #tab-decl .noprint { display: none !important; }
   }
@@ -103,6 +113,7 @@
   <button data-t="fiches">📄 Fiches de paie</button>
   <button data-t="decl">🏛 Déclarations et échéances</button>
   <button data-t="annee">📊 Récapitulatif annuel</button>
+  <button data-t="rz">📑 Annual tax · Ročné zúčtovanie</button>
   <button data-t="param">⚙ Paramètres et sources</button>
 </nav>
 <main>
@@ -155,6 +166,19 @@
   <p class="note">Somme des mois calculés de l'année : base du certificat de revenus (potvrdenie o zdaniteľných príjmoch), de la régularisation annuelle (ročné zúčtovanie) et du rapport annuel (hlásenie).</p>
   <div class="scroll"><table class="t" id="anTable"></table></div>
   <div id="anDue"></div>
+</section>
+
+<section class="tab" id="tab-rz">
+  <div class="noprint">
+    <h2>Annual tax reconciliation · Ročné zúčtovanie dane <span id="rzTitle"></span></h2>
+    <p class="note">The year's tax is recalculated from all months of employment and compared with the advances withheld · Daň za rok sa prepočíta zo všetkých mesiacov a porovná so zrazenými preddavkami.</p>
+    <div class="grid" id="rzForm"></div>
+    <div id="rzWarn"></div>
+    <div class="row"><button class="b pri" onclick="printRZ('rzDoc')">🖨 Print reconciliation · Tlačiť ročné zúčtovanie</button>
+      <button class="b pri" onclick="printRZ('potDoc')">🖨 Print certificate · Tlačiť potvrdenie</button></div>
+  </div>
+  <div id="rzDoc"></div>
+  <div id="potDoc"></div>
 </section>
 
 <section class="tab" id="tab-param">
@@ -682,7 +706,7 @@ function renderDecl() {
     <li><b>Maladie au-delà de ${DB.params.pn.days} jours</b> : la Sociálna poisťovňa paie les indemnités ; l'arrêt de travail est transmis électroniquement (ePN).</li></ul>`;
   h += `<h3>Chaque année</h3><ul class="note">
     <li><b>Avant le 15 février</b> : l'employé demande la régularisation annuelle (ročné zúčtovanie) ou un certificat de revenus.</li>
-    <li><b>Avant le 10 février</b> : remettre le certificat de revenus (potvrdenie o zdaniteľných príjmoch) à l'employé qui le demande.</li>
+    <li><b>Avant le 10 février</b> : remettre le certificat de revenus (potvrdenie o zdaniteľných príjmoch) à l'employé qui l'a demandé avant le 5 février ; <b>avant le 10 mars</b> à tous les autres employés qui n'ont pas demandé la régularisation.</li>
     <li><b>Avant le 31 mars</b> : effectuer la régularisation annuelle de l'impôt pour les employés qui l'ont demandée (avec la paie de mars).</li>
     <li><b>Avant le 30 avril</b> : envoyer au Daňový úrad le rapport annuel (hlásenie o vyúčtovaní dane a o úhrne príjmov zo závislej činnosti).</li>
     <li>La régularisation annuelle de l'assurance santé est faite par les caisses ; l'employeur règle ou récupère la différence qu'elles notifient.</li></ul>`;
@@ -708,6 +732,115 @@ function renderAnnee() {
     (rows.map(({e, t}) => `<tr><td>${esc(e.name)}</td><td class="n">${t.months}</td><td class="n">${fmt(t.gross)}</td><td class="n">${fmt(t.pn)}</td><td class="n">${fmt(t.ee)}</td><td class="n">${fmt(t.h)}</td><td class="n">${fmt(t.zd)}</td><td class="n">${fmt(t.adv)}</td><td class="n">${fmt(t.bon)}</td><td class="n">${fmt(t.net)}</td><td class="n">${fmt(t.cost)}</td></tr>`).join('') ||
       '<tr><td colspan="11" class="note">Aucun mois saisi pour cette année. Un mois compte dès qu\'une saisie y a été faite.</td></tr>');
   $('anDue').innerHTML = `<p class="note">La régularisation annuelle (ročné zúčtovanie) recalcule l'impôt sur l'année entière (abattement annuel, bonus, éventuellement abattement conjoint, épargne retraite III. pilier…) et rembourse ou retient la différence. Ce récapitulatif donne les totaux ; le calcul annuel est à faire avec le formulaire officiel de la Finančná správa.</p>`;
+}
+
+
+// ===================== annual tax reconciliation (ročné zúčtovanie) and income certificate (potvrdenie) =====================
+// Annual 2026 figures: tax-free allowance, annual tax bands, child-bonus reduction limit (18 × average monthly wage).
+const RZ2026 = {nczd: 5966.73, nczdLimit: 26083.13, nczdK: 14661.11, nczdDiv: 3, b1: 43983.32, b2: 60349.21, b3: 75010.32, bonusLimit: 27432, ddsMax: 180};
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function yearMonths(e, y) {
+  const st = parseISO(e.start), en = parseISO(e.end), today = new Date(), out = [];
+  for (let m = 1; m <= 12; m++) {
+    const first = new Date(y, m - 1, 1), last = new Date(y, m, 0);
+    if ((st && st > last) || (en && en < first)) continue;
+    const r = calc(e, y, m, inputs(e, `${y}-${String(m).padStart(2, '0')}`));
+    out.push({m, r, projected: first > today, income: round2(r.gross + r.pn.comp), social: r.eeS, health: r.hEe, adv: r.adv, bonus: r.bonusT, nczd: r.nczd, kids: r.kids});
+  }
+  return out;
+}
+function rzData(e, y) {
+  DB.annual = DB.annual || {}; const A = ((DB.annual[y] || {})[e.id]) || {};
+  const ms = yearMonths(e, y), S = k => round2(ms.reduce((a, x) => a + x[k], 0)), o = k => num(A[k]);
+  const income = round2(S('income') + o('oInc')), social = round2(S('social') + o('oSoc')), health = round2(S('health') + o('oHea'));
+  const adv = round2(S('adv') + o('oAdv')), bonusPaid = round2(S('bonus') + o('oBon'));
+  const zd = round2(income - social - health);
+  let nczd = zd <= RZ2026.nczdLimit ? RZ2026.nczd : Math.max(0, round2(RZ2026.nczdK - zd / RZ2026.nczdDiv));
+  nczd = Math.min(nczd, Math.max(0, zd));
+  const dds = Math.min(o('dds'), RZ2026.ddsMax, Math.max(0, zd - nczd));
+  const base = floor2(Math.max(0, zd - nczd - dds)), T = DB.params.tax;
+  const tax = floor2(Math.min(base, RZ2026.b1) * T.r1 / 100 + Math.max(0, Math.min(base, RZ2026.b2) - RZ2026.b1) * T.r2 / 100 +
+    Math.max(0, Math.min(base, RZ2026.b3) - RZ2026.b2) * T.r3 / 100 + Math.max(0, base - RZ2026.b3) * T.r4 / 100);
+  // child bonus for the year: monthly entitlements, reduced by a tenth of the base above the limit (each child), capped at a share of the base
+  const B = DB.params.bonus, kids = e.children.map(k => {
+    let full = 0, months = 0;
+    ms.forEach(x => { const a = ageAt(k.birth, new Date(y, x.m - 1, 1)); const v = a < 15 ? B.u15 : a < 18 ? B.u18 : 0; if (v) { full += v; months++; } });
+    return {name: k.name, birth: k.birth, months, full};
+  }).filter(k => k.full);
+  const cut = zd > RZ2026.bonusLimit ? (zd - RZ2026.bonusLimit) / B.cut : 0;
+  kids.forEach(k => { k.v = Math.max(0, round2(k.full - cut)); });
+  const sumK = kids.reduce((a, k) => a + k.v, 0), cap = kids.length ? zd * B.pct[Math.min(kids.length, B.pct.length) - 1] / 100 : 0;
+  const bonusYear = ceil2(Math.min(sumK, cap));
+  const taxDiff = round2(adv - tax), bonusDiff = round2(bonusYear - bonusPaid), result = round2(taxDiff + bonusDiff);
+  return {A, ms, income, social, health, zd, nczd, dds, base, tax, adv, kids, bonusYear, bonusPaid, taxDiff, bonusDiff, result};
+}
+function renderRZ() {
+  const y = CUR.y; $('rzTitle').textContent = `– ${y}`;
+  const emps = DB.employees.filter(e => yearMonths(e, y).length);
+  DB.annual = DB.annual || {}; DB.annual[y] = DB.annual[y] || {};
+  const sel = window.RZWHO && emps.some(e => e.id === RZWHO) ? RZWHO : (emps[0] || {}).id;
+  if (!sel) { $('rzForm').innerHTML = '<p class="note">No employee in this year · Žiadny zamestnanec v tomto roku.</p>'; $('rzDoc').innerHTML = $('potDoc').innerHTML = ''; return; }
+  const e = DB.employees.find(x => x.id === sel), A = DB.annual[y][e.id] || (DB.annual[y][e.id] = {request: 'rz'});
+  const nf = (k, en, sk) => `<label>${en} · <span style="font-weight:normal">${sk}</span><input type="number" step="0.01" data-a="${k}" value="${esc(A[k] ?? '')}" placeholder="0"></label>`;
+  $('rzForm').innerHTML = `<label>Employee · Zamestnanec<select id="rzWho">${emps.map(x => `<option value="${x.id}"${x.id === sel ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+    <label>Employee's request · Žiadosť zamestnanca<select data-a="request"><option value="rz"${A.request !== 'pot' ? ' selected' : ''}>Annual reconciliation by the employer · Ročné zúčtovanie</option>
+      <option value="pot"${A.request === 'pot' ? ' selected' : ''}>Certificate only (own tax return) · Len potvrdenie (daňové priznanie)</option></select></label>
+    ${nf('dds', 'III. pillar contributions paid (€)', 'Príspevky na DDS')}
+    ${nf('oInc', 'Other employer: income (€)', 'Iný zamestnávateľ: príjmy')}${nf('oSoc', 'Other employer: social contributions', 'poistné na sociálne poistenie')}
+    ${nf('oHea', 'Other employer: health insurance', 'poistné na zdravotné poistenie')}${nf('oAdv', 'Other employer: tax advances', 'zrazené preddavky')}${nf('oBon', 'Other employer: child bonus paid', 'vyplatený daňový bonus')}`;
+  $('rzWho').onchange = ev => { window.RZWHO = ev.target.value; renderRZ(); };
+  $('rzForm').querySelectorAll('[data-a]').forEach(i => i.onchange = () => { A[i.dataset.a] = i.tagName === 'SELECT' ? i.value : i.value; save(); renderRZ(); });
+  const d = rzData(e, y), E = DB.employer, w = [];
+  if (d.ms.some(x => x.projected)) w.push(`Months not yet paid are projected from the current settings · Mesiace, ktoré ešte neboli vyplatené, sú odhadnuté (${d.ms.filter(x => x.projected).map(x => MONTHS_EN[x.m - 1]).join(', ')}).`);
+  if (e.payType === 'net') w.push('Fixed net salary: the refund or extra tax follows the employment contract (whether the embassy or the employee keeps or bears it) · Pevná čistá mzda: s preplatkom/nedoplatkom sa naloží podľa zmluvy.');
+  if (num(A.dds) > RZ2026.ddsMax) w.push(`III. pillar deduction limited to ${RZ2026.ddsMax} € · Odpočet príspevkov na DDS najviac ${RZ2026.ddsMax} €.`);
+  $('rzWarn').innerHTML = w.length ? `<div class="warn">${w.map(esc).join('<br>')}</div>` : '';
+  const row = (en, sk, v, cls) => `<tr${cls ? ` class="${cls}"` : ''}><td>${en} <span class="sk">${sk}</span></td><td class="n">${typeof v === 'number' ? fmt(v) + ' €' : v}</td></tr>`;
+  const head = (en, sk) => `<div class="hd"><div><h4>${en}</h4><span class="sk">${sk}</span><br><b>${y}</b> · tax year · zdaňovacie obdobie</div>
+    <div style="text-align:right"><b>${esc(E.name)}</b>${E.nameSk ? `<br><span class="sk">${esc(E.nameSk)}</span>` : ''}<br>${esc(E.addr)}${E.dic ? '<br>DIČ ' + esc(E.dic) : ''}</div></div>
+    <table><tr><td>Employee <span class="sk">Zamestnanec</span></td><td><b>${esc(e.name)}</b>${e.rc ? ' · rodné číslo ' + esc(e.rc) : ''}${e.addr ? '<br>' + esc(e.addr) : ''}</td></tr>
+      <tr><td>Months of employment <span class="sk">Mesiace zamestnania</span></td><td>${d.ms.map(x => x.m).join(', ')} (${d.ms.length})</td></tr></table>`;
+  const res = d.result;
+  $('rzDoc').innerHTML = `<div class="doc">${head('Annual tax reconciliation', 'Výpočet ročného zúčtovania preddavkov na daň z príjmov zo závislej činnosti (§ 38 zákona o dani z príjmov)')}
+    ${A.request === 'pot' ? '<p class="bad">The employee did not ask for the reconciliation: issue the certificate only · Zamestnanec nepožiadal o ročné zúčtovanie: vystavte len potvrdenie.</p>' : ''}
+    <table><tr><th>Item · Položka</th><th class="n">Amount · Suma</th></tr>
+      ${row('Total taxable employment income', 'Úhrn zdaniteľných príjmov zo závislej činnosti', d.income)}
+      ${row('Employee social insurance contributions', 'Poistné na sociálne poistenie platené zamestnancom', -d.social)}
+      ${row('Employee health insurance contributions', 'Poistné na zdravotné poistenie platené zamestnancom', -d.health)}
+      ${row('Partial tax base', 'Čiastkový základ dane', d.zd, 's')}
+      ${row('Personal tax-free allowance', 'Nezdaniteľná časť základu dane na daňovníka', -d.nczd)}
+      ${d.dds ? row('III. pillar contributions', 'Príspevky na doplnkové dôchodkové sporenie', -d.dds) : ''}
+      ${row('Tax base', 'Základ dane', d.base, 's')}
+      ${row('Tax (19 / 25 / 30 / 35 %)', 'Daň', d.tax, 's')}
+      ${row('Tax advances withheld during the year', 'Úhrn zrazených preddavkov na daň', d.adv)}
+      ${row(d.taxDiff >= 0 ? 'Tax overpaid' : 'Tax underpaid', d.taxDiff >= 0 ? 'Preplatok na dani' : 'Nedoplatok na dani', Math.abs(d.taxDiff), 's')}
+      ${d.kids.length || d.bonusPaid ? row('Child tax bonus for the year', 'Daňový bonus za rok' + (d.kids.length ? ' (' + d.kids.map(k => `${esc(k.name || 'child')}: ${k.months} m.`).join(', ') + ')' : ''), d.bonusYear) +
+        row('Child tax bonus already paid', 'Vyplatený daňový bonus', d.bonusPaid) + row(d.bonusDiff >= 0 ? 'Bonus still due to the employee' : 'Bonus paid in excess', d.bonusDiff >= 0 ? 'Nevyplatený daňový bonus' : 'Neoprávnene vyplatený daňový bonus', Math.abs(d.bonusDiff)) : ''}
+      ${res < 0 && res > -5 ? row(`NOTHING TO WITHHOLD (underpayment of ${fmt(-res)} € is under 5 €)`, 'Nedoplatok do 5 € sa nezráža', 0, 'res')
+        : row(res >= 0 ? 'REFUND TO THE EMPLOYEE' : 'TO BE WITHHELD FROM THE EMPLOYEE', res >= 0 ? 'Vráti sa zamestnancovi (preplatok)' : 'Zrazí sa zamestnancovi (nedoplatok)', Math.abs(res), 'res')}
+    </table>
+    <p class="sk" style="font-size:10.5px">${res >= 0 ? 'Paid to the employee with the salary for March, at the latest with April’s; the employer deducts it from the tax advances it pays · Vyplatí sa pri zúčtovaní mzdy za marec (najneskôr za apríl) a zamestnávateľ si ho zníži z odvádzaných preddavkov.' :
+      'Withheld from the employee’s pay at the latest by the end of the year, unless it is under 5 € · Zrazí sa zamestnancovi zo mzdy najneskôr do konca roka; nedoplatok do 5 € sa nevyberá.'}
+      Reconciliation due by 31 March ${y + 1}, if requested by 15 February · Ročné zúčtovanie do 31. marca ${y + 1}, ak zamestnanec požiadal do 15. februára.</p>
+    <table><tr><th>Month · Mesiac</th><th class="n">Income · Príjem</th><th class="n">Social · SP</th><th class="n">Health · ZP</th><th class="n">Allowance · NČZD</th><th class="n">Tax advance · Preddavok</th><th class="n">Bonus</th></tr>
+      ${d.ms.map(x => `<tr><td>${MONTHS_EN[x.m - 1]} · ${MONTHS_SK[x.m - 1]}${x.projected ? ' <span class="pill y">projected</span>' : ''}</td><td class="n">${fmt(x.income)}</td><td class="n">${fmt(x.social)}</td><td class="n">${fmt(x.health)}</td><td class="n">${fmt(x.nczd)}</td><td class="n">${fmt(x.adv)}</td><td class="n">${fmt(x.bonus)}</td></tr>`).join('')}</table>
+    <div class="sign"><div>Prepared by, date · Vypracoval, dátum</div><div>Employer's stamp and signature · Pečiatka a podpis zamestnávateľa</div></div></div>`;
+  $('potDoc').innerHTML = `<div class="doc">${head('Certificate of taxable employment income', 'Potvrdenie o zdaniteľných príjmoch fyzickej osoby zo závislej činnosti (§ 39 ods. 5 zákona o dani z príjmov)')}
+    <table><tr><th>Item · Položka</th><th class="n">Amount · Suma</th></tr>
+      ${row('Total taxable income paid (row 01)', 'Úhrn zdaniteľných príjmov (r. 01)', round2(d.income - num(A.oInc)))}
+      ${row('Employee social insurance contributions', 'Poistné na sociálne poistenie zamestnanca', round2(d.social - num(A.oSoc)))}
+      ${row('Employee health insurance contributions', 'Poistné na zdravotné poistenie zamestnanca', round2(d.health - num(A.oHea)))}
+      ${row('Tax advances withheld', 'Úhrn zrazených preddavkov na daň', round2(d.adv - num(A.oAdv)))}
+      ${row('Child tax bonus paid', 'Vyplatený daňový bonus', round2(d.bonusPaid - num(A.oBon)))}
+      ${row('Months the tax-free allowance was applied', 'Mesiace, v ktorých bola uplatnená NČZD', d.ms.filter(x => x.nczd > 0).map(x => x.m).join(', ') || '—')}
+      ${row('Months the child bonus was paid', 'Mesiace, v ktorých bol vyplatený daňový bonus', d.ms.filter(x => x.bonus > 0).map(x => x.m).join(', ') || '—')}
+    </table>
+    <p class="sk" style="font-size:10.5px">Figures for the official form POT395v26 (Finančná správa) · Údaje pre vyplnenie úradného tlačiva POT395v26. Issued by 10 February ${y + 1} if requested by 5 February, otherwise by 10 March ${y + 1} · Vystaví sa do 10. februára ${y + 1}, ak zamestnanec požiada do 5. februára, inak do 10. marca ${y + 1}.</p>
+    <div class="sign"><div>Date · Dátum</div><div>Employer's stamp and signature · Pečiatka a podpis zamestnávateľa</div></div></div>`;
+}
+function printRZ(id) {
+  document.querySelectorAll('#tab-rz .doc').forEach(x => x.classList.remove('go')); const el = $(id).querySelector('.doc'); if (!el) return; el.classList.add('go');
+  document.body.classList.add('printRZ'); const done = () => { document.body.classList.remove('printRZ'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); window.print();
 }
 
 // ===================== parameters =====================
@@ -773,6 +906,7 @@ function renderAll() {
   if (on === 'tab-decl') renderDecl();
   if (on === 'tab-annee') renderAnnee();
   if (on === 'tab-param') renderParams();
+  if (on === 'tab-rz') renderRZ();
   if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
 }
 load();
