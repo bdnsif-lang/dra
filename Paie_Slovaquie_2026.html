@@ -74,6 +74,9 @@
   .doc td, .doc th { padding: 3px 5px; border-bottom: 1px dotted #c9d4cd; text-align: left; vertical-align: top; } .doc td.n, .doc th.n { text-align: right; white-space: nowrap; }
   .doc th { background: #e6f1ea; color: var(--g); } .doc tr.s td { font-weight: bold; } .doc tr.res td { font-weight: bold; font-size: 13px; background: #fff3c4; border-top: 2px solid #000; }
   .doc .hd { display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--g); padding-bottom: 6px; margin-bottom: 8px; }
+  .doc .part { margin: 10px 0 2px; padding: 4px 6px; background: var(--g); color: #fff; font-weight: bold; font-size: 12px; }
+  .doc .part i { font-weight: normal; opacity: .85; } .doc td.no { width: 34px; font-weight: bold; color: var(--g); white-space: nowrap; }
+  .doc td.en, .doc span.en { color: #555; font-style: italic; font-size: 10.5px; }
   .doc .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 28px; } .doc .sign div { border-top: 1px solid #000; padding-top: 3px; font-size: 10.5px; }
   @media print {
     @page { size: A4 portrait; margin: 8mm; }
@@ -84,8 +87,11 @@
     .slip:last-child { page-break-after: auto; break-after: auto; }
     body.printDecl section.tab { display: none !important; }
     body.printRZ section.tab { display: none !important; }
-    body.printRZ #tab-rz { display: block !important; } body.printRZ #tab-rz .noprint, body.printRZ #tab-rz .doc:not(.go) { display: none !important; }
-    body.printRZ .doc { border: 0; margin: 0; }
+    body.printRZ #tab-rz, body.printRZ #tab-pot { display: block !important; }
+    body.printRZ #tab-rz .noprint, body.printRZ #tab-pot .noprint, body.printRZ .doc:not(.go) { display: none !important; }
+    body.printRZ .doc { border: 0; margin: 0; padding: 0; font-size: 9.5px; line-height: 1.25; max-width: none; }
+    body.printRZ .doc td, body.printRZ .doc th { padding: 1.4px 4px; } body.printRZ .doc .part { margin: 5px 0 1px; padding: 2px 5px; font-size: 10.5px; }
+    body.printRZ .doc td.en, body.printRZ .doc span.en { font-size: 8.8px; } body.printRZ .doc .sign { margin-top: 16px; } body.printRZ .doc h4 { font-size: 13px; }
     body.printDecl #tab-decl { display: block !important; }
     body.printDecl #tab-decl .noprint { display: none !important; }
   }
@@ -114,6 +120,7 @@
   <button data-t="decl">🏛 Déclarations et échéances</button>
   <button data-t="annee">📊 Récapitulatif annuel</button>
   <button data-t="rz">📑 Annual tax · Ročné zúčtovanie</button>
+  <button data-t="pot">🧾 Tax confirmation · Potvrdenie</button>
   <button data-t="param">⚙ Paramètres et sources</button>
 </nav>
 <main>
@@ -175,9 +182,19 @@
     <div class="grid" id="rzForm"></div>
     <div id="rzWarn"></div>
     <div class="row"><button class="b pri" onclick="printRZ('rzDoc')">🖨 Print reconciliation · Tlačiť ročné zúčtovanie</button>
-      <button class="b pri" onclick="printRZ('potDoc')">🖨 Print certificate · Tlačiť potvrdenie</button></div>
+      <button class="b" onclick="showTab('pot')">🧾 Tax confirmation · Potvrdenie →</button></div>
   </div>
   <div id="rzDoc"></div>
+</section>
+
+<section class="tab" id="tab-pot">
+  <div class="noprint">
+    <h2>Tax confirmation · Potvrdenie o zdaniteľných príjmoch <span id="potTitle"></span></h2>
+    <p class="note">Confirmation of the employee's taxable employment income, contributions, tax withheld and child bonus for the year, laid out like the official form POT395v26 (§ 39 ods. 5 zákona o dani z príjmov) · Potvrdenie podľa vzoru POT395v26.</p>
+    <div class="grid" id="potForm"></div>
+    <div id="potWarn"></div>
+    <div class="row"><button class="b pri" onclick="printRZ('potDoc')">🖨 Print · Tlačiť</button></div>
+  </div>
   <div id="potDoc"></div>
 </section>
 
@@ -374,9 +391,9 @@ function editEmp(id) {
 }
 function renderKids() {
   $('kids').innerHTML = KIDS.map((k, i) => `<div class="k"><input placeholder="Prénom" value="${esc(k.name)}" oninput="KIDS[${i}].name=this.value">
-    <input type="date" value="${esc(k.birth)}" oninput="KIDS[${i}].birth=this.value"> <button class="b danger" onclick="KIDS.splice(${i},1);renderKids()">✕</button></div>`).join('') || '<p class="note">Aucun enfant déclaré.</p>';
+    <input type="date" value="${esc(k.birth)}" oninput="KIDS[${i}].birth=this.value"> <input placeholder="Rodné číslo" style="width:120px" value="${esc(k.rc || '')}" oninput="KIDS[${i}].rc=this.value"> <button class="b danger" onclick="KIDS.splice(${i},1);renderKids()">✕</button></div>`).join('') || '<p class="note">Aucun enfant déclaré.</p>';
 }
-function addKid() { KIDS.push({name: '', birth: ''}); renderKids(); }
+function addKid() { KIDS.push({name: '', birth: '', rc: ''}); renderKids(); }
 function quickAdd() {
   const name = $('qName').value.trim(), net = num($('qNet').value);
   if (!name || !(net > 0)) { alert('Indiquez le nom et le salaire net.'); return; }
@@ -825,22 +842,78 @@ function renderRZ() {
     <table><tr><th>Month · Mesiac</th><th class="n">Income · Príjem</th><th class="n">Social · SP</th><th class="n">Health · ZP</th><th class="n">Allowance · NČZD</th><th class="n">Tax advance · Preddavok</th><th class="n">Bonus</th></tr>
       ${d.ms.map(x => `<tr><td>${MONTHS_EN[x.m - 1]} · ${MONTHS_SK[x.m - 1]}${x.projected ? ' <span class="pill y">projected</span>' : ''}</td><td class="n">${fmt(x.income)}</td><td class="n">${fmt(x.social)}</td><td class="n">${fmt(x.health)}</td><td class="n">${fmt(x.nczd)}</td><td class="n">${fmt(x.adv)}</td><td class="n">${fmt(x.bonus)}</td></tr>`).join('')}</table>
     <div class="sign"><div>Prepared by, date · Vypracoval, dátum</div><div>Employer's stamp and signature · Pečiatka a podpis zamestnávateľa</div></div></div>`;
-  $('potDoc').innerHTML = `<div class="doc">${head('Certificate of taxable employment income', 'Potvrdenie o zdaniteľných príjmoch fyzickej osoby zo závislej činnosti (§ 39 ods. 5 zákona o dani z príjmov)')}
-    <table><tr><th>Item · Položka</th><th class="n">Amount · Suma</th></tr>
-      ${row('Total taxable income paid (row 01)', 'Úhrn zdaniteľných príjmov (r. 01)', round2(d.income - num(A.oInc)))}
-      ${row('Employee social insurance contributions', 'Poistné na sociálne poistenie zamestnanca', round2(d.social - num(A.oSoc)))}
-      ${row('Employee health insurance contributions', 'Poistné na zdravotné poistenie zamestnanca', round2(d.health - num(A.oHea)))}
-      ${row('Tax advances withheld', 'Úhrn zrazených preddavkov na daň', round2(d.adv - num(A.oAdv)))}
-      ${row('Child tax bonus paid', 'Vyplatený daňový bonus', round2(d.bonusPaid - num(A.oBon)))}
-      ${row('Months the tax-free allowance was applied', 'Mesiace, v ktorých bola uplatnená NČZD', d.ms.filter(x => x.nczd > 0).map(x => x.m).join(', ') || '—')}
-      ${row('Months the child bonus was paid', 'Mesiace, v ktorých bol vyplatený daňový bonus', d.ms.filter(x => x.bonus > 0).map(x => x.m).join(', ') || '—')}
-    </table>
-    <p class="sk" style="font-size:10.5px">Figures for the official form POT395v26 (Finančná správa) · Údaje pre vyplnenie úradného tlačiva POT395v26. Issued by 10 February ${y + 1} if requested by 5 February, otherwise by 10 March ${y + 1} · Vystaví sa do 10. februára ${y + 1}, ak zamestnanec požiada do 5. februára, inak do 10. marca ${y + 1}.</p>
-    <div class="sign"><div>Date · Dátum</div><div>Employer's stamp and signature · Pečiatka a podpis zamestnávateľa</div></div></div>`;
 }
 function printRZ(id) {
-  document.querySelectorAll('#tab-rz .doc').forEach(x => x.classList.remove('go')); const el = $(id).querySelector('.doc'); if (!el) return; el.classList.add('go');
+  document.querySelectorAll('.doc').forEach(x => x.classList.remove('go')); const el = $(id).querySelector('.doc'); if (!el) return; el.classList.add('go');
   document.body.classList.add('printRZ'); const done = () => { document.body.classList.remove('printRZ'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); window.print();
+}
+
+
+// ===================== tax confirmation (potvrdenie o zdaniteľných príjmoch, form POT395v26) =====================
+function renderPot() {
+  const y = CUR.y; $('potTitle').textContent = `– ${y}`;
+  const emps = DB.employees.filter(e => yearMonths(e, y).length);
+  DB.annual = DB.annual || {}; DB.annual[y] = DB.annual[y] || {};
+  const sel = window.RZWHO && emps.some(e => e.id === RZWHO) ? RZWHO : (emps[0] || {}).id;
+  if (!sel) { $('potForm').innerHTML = '<p class="note">No employee in this year · Žiadny zamestnanec v tomto roku.</p>'; $('potDoc').innerHTML = ''; return; }
+  const e = DB.employees.find(x => x.id === sel), A = DB.annual[y][e.id] || (DB.annual[y][e.id] = {request: 'rz'});
+  const inp = (k, en, sk, type, ph) => `<label>${en} · <span style="font-weight:normal">${sk}</span><input type="${type || 'text'}" ${type === 'number' ? 'step="0.01"' : ''} data-a="${k}" value="${esc(A[k] ?? '')}" placeholder="${ph || ''}"></label>`;
+  $('potForm').innerHTML = `<label>Employee · Zamestnanec<select id="potWho">${emps.map(x => `<option value="${x.id}"${x.id === sel ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+    ${inp('potDate', 'Date of issue', 'Dátum vystavenia', 'date')}${inp('prepBy', 'Prepared by', 'Vypracoval', 'text')}${inp('tel', 'Phone / e-mail', 'Telefón / e-mail', 'text')}
+    ${inp('ex05', 'Row 05 exempt income (€)', 'r. 05 oslobodené (max 200 €)', 'number', '0')}${inp('ex06', 'Row 06 exempt income (€)', 'r. 06 oslobodené (max 2 000 €)', 'number', '0')}`;
+  $('potWho').onchange = ev => { window.RZWHO = ev.target.value; renderPot(); };
+  $('potForm').querySelectorAll('[data-a]').forEach(i => i.onchange = () => { A[i.dataset.a] = i.value; save(); renderPot(); });
+  const d = rzData(e, y), E = DB.employer, own = k => round2(d[k] - num(A[{income: 'oInc', social: 'oSoc', health: 'oHea', adv: 'oAdv', bonusPaid: 'oBon'}[k]]));
+  const inc = own('income'), contrib = round2(own('social') + own('health')), zd = round2(inc - contrib);
+  const w = [];
+  if (d.ms.some(x => x.projected)) w.push(`Months not yet paid are projected: issue the confirmation after the last pay of the year · Neuplynuté mesiace sú odhadnuté (${d.ms.filter(x => x.projected).map(x => MONTHS_EN[x.m - 1]).join(', ')}).`);
+  if (!e.rc) w.push("The employee's rodné číslo is missing: add it in the employee's details · Chýba rodné číslo zamestnanca.");
+  if (num(A.ex05) > 200) w.push('Row 05 is limited to 200 € · r. 05 najviac 200 €.'); if (num(A.ex06) > 2000) w.push('Row 06 is limited to 2 000 € · r. 06 najviac 2 000 €.');
+  $('potWarn').innerHTML = w.length ? `<div class="warn">${w.map(esc).join('<br>')}</div>` : '';
+  const ms = d.ms.map(x => x.m), from = ms.length ? new Date(y, ms[0] - 1, 1) : null, to = ms.length ? new Date(y, ms[ms.length - 1], 0) : null;
+  const st = parseISO(e.start), en = parseISO(e.end), dFrom = st && st > from ? st : from, dTo = en && en < to ? en : to;
+  const fd = x => x ? x.toLocaleDateString('sk-SK') : '';
+  const row = (no, sk, en, v) => `<tr><td class="no">${no}</td><td>${sk}<br><span class="en">${en}</span></td><td class="n">${typeof v === 'number' ? fmt(v) + ' €' : v}</td></tr>`;
+  const kidsMonths = (e.children || []).map(k => {
+    const months = d.ms.filter(x => x.kids.some(c => c.name === k.name && c.full)).map(x => x.m);
+    return {k, months};
+  }).filter(x => x.months.length);
+  const issue = parseISO(A.potDate) || new Date();
+  $('potDoc').innerHTML = `<div class="doc">
+    <div class="hd"><div><h4>POTVRDENIE o zdaniteľných príjmoch fyzickej osoby zo závislej činnosti</h4>
+      <span>a ďalších údajoch podľa § 39 ods. 5 zákona č. 595/2003 Z. z. o dani z príjmov za zdaňovacie obdobie roku <b>${y}</b></span><br>
+      <span class="en">CONFIRMATION of an individual's taxable income from employment and other data under § 39(5) of Income Tax Act No. 595/2003 Coll., tax year ${y}</span></div>
+      <div style="text-align:right;font-size:10.5px">Vzor POT395v26<br><span class="en">official form model</span></div></div>
+    <div class="part">I. ODDIEL – Údaje o zamestnancovi <i>· Part I – Employee</i></div>
+    <table>${row('', 'Priezvisko a meno', 'Surname and first name', `<b>${esc(e.name)}</b>`)}
+      ${row('', 'Rodné číslo / Dátum narodenia', 'Birth number / Date of birth', `${esc(e.rc) || '—'}${e.birth ? ' / ' + fd(parseISO(e.birth)) : ''}`)}
+      ${row('', 'Adresa trvalého pobytu', 'Permanent address', esc(e.addr) || '—')}
+      ${row('', 'Obdobie, za ktoré sa potvrdenie vydáva', 'Period covered', `${fd(dFrom)} – ${fd(dTo)}`)}</table>
+    <div class="part">II. ODDIEL – Údaje o príjmoch a preddavkoch <i>· Part II – Income and tax advances</i></div>
+    <table>
+      ${row('01', 'Úhrn vyplatených zdaniteľných príjmov zo závislej činnosti (peňažných aj nepeňažných), okrem príjmov, z ktorých sa daň vyberá zrážkou podľa § 43', 'Total taxable employment income paid (cash and in kind), excluding income taxed by withholding under § 43', inc)}
+      ${row('01a', 'z r. 01 príjmy z dohôd o prácach vykonávaných mimo pracovného pomeru', 'of row 01: income from work agreements outside employment', 0)}
+      ${row('01b', 'z r. 01 príjmy zo zdrojov v zahraničí, pri ktorých sa postupuje podľa § 45', 'of row 01: income from foreign sources under § 45', 0)}
+      ${row('02', 'Úhrn poistného a príspevkov, ktoré je povinný platiť zamestnanec', 'Total social and health insurance contributions payable by the employee', contrib)}
+      ${row('03', 'Čiastkový základ dane z príjmov zo závislej činnosti (§ 5 ods. 8) (r. 01 − r. 02)', 'Partial tax base from employment (row 01 − row 02)', zd)}
+      ${row('04', 'Úhrn preddavkov na daň zrazených podľa § 35 (bez uplatnenia daňového bonusu)', 'Total tax advances withheld under § 35 (before the child tax bonus)', own('adv'))}
+      ${row('05', 'Príjmy oslobodené od dane podľa § 5 ods. 7 písm. k) (najviac 200 €)', 'Income exempt under § 5(7)(k) (max. 200 €)', num(A.ex05))}
+      ${row('06', 'Príjmy oslobodené od dane podľa § 5 ods. 7 písm. l) (najviac 2 000 €)', 'Income exempt under § 5(7)(l) (max. 2 000 €)', num(A.ex06))}
+    </table>
+    <div class="part">Daňový bonus na vyživované dieťa (§ 33) <i>· Child tax bonus</i></div>
+    ${kidsMonths.length ? `<table><tr><th>Priezvisko a meno dieťaťa<br><span class="en">Child's name</span></th><th>Rodné číslo<br><span class="en">Birth number</span></th><th>Priznaný daňový bonus v mesiacoch<br><span class="en">Months the bonus was granted</span></th></tr>
+      ${kidsMonths.map(x => `<tr><td>${esc(x.k.name) || '—'}</td><td>${esc(x.k.rc || '') || (x.k.birth ? fd(parseISO(x.k.birth)) : '—')}</td><td>${x.months.join(', ')}</td></tr>`).join('')}</table>
+      <table>${row('', 'Úhrn vyplateného daňového bonusu', 'Total child tax bonus paid', own('bonusPaid'))}</table>` :
+      '<p style="margin:4px 6px">Zamestnanec si neuplatnil daňový bonus. <span class="en">· No child tax bonus was claimed.</span></p>'}
+    <div class="part">Doplňujúce údaje po mesiacoch <i>· Additional information by month (not a row of the official form)</i></div>
+    <table><tr><th>Mesiac<br><span class="en">Month</span></th><th class="n">Príjem<br><span class="en">Income</span></th><th class="n">Poistné<br><span class="en">Contributions</span></th><th class="n">NČZD<br><span class="en">Allowance</span></th><th class="n">Preddavok<br><span class="en">Tax advance</span></th><th class="n">Daňový bonus<br><span class="en">Child bonus</span></th></tr>
+      ${d.ms.map(x => `<tr><td>${MONTHS_SK[x.m - 1]} <span class="en">${MONTHS_EN[x.m - 1]}</span></td><td class="n">${fmt(x.income)}</td><td class="n">${fmt(round2(x.social + x.health))}</td><td class="n">${fmt(x.nczd)}</td><td class="n">${fmt(x.adv)}</td><td class="n">${fmt(x.bonus)}</td></tr>`).join('')}</table>
+    <div class="part">III. ODDIEL – Údaje o zamestnávateľovi <i>· Part III – Employer</i></div>
+    <table>${row('', 'Názov zamestnávateľa', 'Employer', `<b>${esc(E.nameSk || E.name)}</b>${E.nameSk && E.name ? `<br><span class="en">${esc(E.name)}</span>` : ''}`)}
+      ${row('', 'Sídlo / adresa', 'Address', esc(E.addr) || '—')}${row('', 'Daňové identifikačné číslo (DIČ)', 'Tax identification number', esc(E.dic) || '—')}
+      ${row('', 'Vypracoval / telefón', 'Prepared by / phone', `${esc(A.prepBy || '')}${A.tel ? ' · ' + esc(A.tel) : ''}` || '—')}${row('', 'Dátum vystavenia', 'Date of issue', fd(issue))}</table>
+    <p class="en" style="margin-top:8px">Deadline: by 10 February ${y + 1} if the employee asked by 5 February, otherwise by 10 March ${y + 1} · Lehota: do 10. februára ${y + 1}, ak zamestnanec požiadal do 5. februára, inak do 10. marca ${y + 1}.</p>
+    <div class="sign"><div>Odtlačok pečiatky a podpis zamestnávateľa<br><span class="en">Employer's stamp and signature</span></div><div>Prevzal zamestnanec (dátum, podpis)<br><span class="en">Received by the employee (date, signature)</span></div></div></div>`;
 }
 
 // ===================== parameters =====================
@@ -907,6 +980,7 @@ function renderAll() {
   if (on === 'tab-annee') renderAnnee();
   if (on === 'tab-param') renderParams();
   if (on === 'tab-rz') renderRZ();
+  if (on === 'tab-pot') renderPot();
   if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
 }
 load();
