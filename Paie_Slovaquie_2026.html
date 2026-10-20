@@ -89,6 +89,12 @@
     body.printRZ section.tab { display: none !important; }
     body.printRZ #tab-rz, body.printRZ #tab-pot { display: block !important; }
     body.printRZ #tab-rz .noprint, body.printRZ #tab-pot .noprint, body.printRZ .doc:not(.go) { display: none !important; }
+    body.printSim section.tab { display: none !important; } body.printSim #tab-sim { display: block !important; } body.printSim #tab-sim .noprint { display: none !important; }
+    body.printSim .simblock { break-after: page; page-break-after: always; } body.printSim .simblock:last-child { break-after: auto; page-break-after: auto; }
+    body.printSim .doc { border: 0; margin: 0; padding: 0; font-size: 9.5px; line-height: 1.25; max-width: none; }
+    body.printSim .doc td, body.printSim .doc th { padding: 1.4px 4px; } body.printSim .doc .part { margin: 5px 0 1px; padding: 2px 5px; font-size: 10.5px; }
+    body.printSim .doc td.en, body.printSim .doc span.en { font-size: 8.8px; } body.printSim .doc .sign { margin-top: 16px; }
+    body.printSim table.t { font-size: 9px; } body.printSim table.t td, body.printSim table.t th { padding: 1.5px 3px; }
     body.printRZ .doc { border: 0; margin: 0; padding: 0; font-size: 9.5px; line-height: 1.25; max-width: none; }
     body.printRZ .doc td, body.printRZ .doc th { padding: 1.4px 4px; } body.printRZ .doc .part { margin: 5px 0 1px; padding: 2px 5px; font-size: 10.5px; }
     body.printRZ .doc td.en, body.printRZ .doc span.en { font-size: 8.8px; } body.printRZ .doc .sign { margin-top: 16px; } body.printRZ .doc h4 { font-size: 13px; }
@@ -110,7 +116,8 @@
     <input type="file" id="openf" accept=".json" hidden>
     <button onclick="exportCSV()">📤 CSV du mois</button>
   </span>
-  <span class="grp"><button class="pri" onclick="printSlips()">🖨 Imprimer les fiches</button></span>
+  <span class="grp"><button class="pri" onclick="printSlips()">🖨 Imprimer les fiches</button>
+    <button onclick="showTab('sim')" title="Full simulation for one employee from the net salary · Úplná simulácia pre jedného zamestnanca">🧪 Simulation</button></span>
   <span id="saved" style="margin-left:auto;font-size:12px;opacity:.9"></span>
 </div>
 <nav id="tabs">
@@ -121,6 +128,7 @@
   <button data-t="annee">📊 Récapitulatif annuel</button>
   <button data-t="rz">📑 Annual tax · Ročné zúčtovanie</button>
   <button data-t="pot">🧾 Tax confirmation · Potvrdenie</button>
+  <button data-t="sim">🧪 Simulation</button>
   <button data-t="param">⚙ Paramètres et sources</button>
 </nav>
 <main>
@@ -196,6 +204,33 @@
     <div class="row"><button class="b pri" onclick="printRZ('potDoc')">🖨 Print · Tlačiť</button></div>
   </div>
   <div id="potDoc"></div>
+</section>
+
+<section class="tab" id="tab-sim">
+  <div class="noprint">
+    <h2>🧪 Full simulation for one employee · Úplná simulácia</h2>
+    <p class="note">Enter the net salary and what you know; the program works out everything else for the whole year: gross pay, payslips, payments and declarations with their deadlines, annual tax reconciliation and tax confirmation. Nothing is saved unless you click « Add to the payroll ».<br>
+      Zadajte čistú mzdu a známe údaje; program vypočíta všetko ostatné za celý rok. Nič sa neuloží, kým nekliknete « Pridať do miezd ».</p>
+    <div class="card">
+      <div class="grid">
+        <label>Name · Meno<input id="sName" value="Simulation"></label>
+        <label>Fixed net salary (€) · Čistá mzda<input id="sNet" type="number" step="0.01" value="2000"></label>
+        <label>Health insurer · Zdravotná poisťovňa<select id="sIns"><option value="25">VšZP</option><option value="24">Dôvera</option><option value="27">Union</option></select></label>
+        <label>Year · Rok<input id="sYear" type="number" min="2026" max="2099"></label>
+        <label>First month of work · Prvý mesiac<select id="sStart"></select></label>
+        <label>Pay day of the month · Deň výplaty<input id="sPay" type="number" min="1" max="31"></label>
+        <label>Pension · Dôchodok<select id="sPen"></select></label>
+        <label class="chk"><input type="checkbox" id="sDss"> II. pillar · II. pilier</label>
+        <label class="chk"><input type="checkbox" id="sZtp"> Disability card ZŤP · Preukaz ZŤP</label>
+        <label class="chk"><input type="checkbox" id="sNczd" checked> Tax-free allowance claimed · Uplatňuje NČZD</label>
+      </div>
+      <h3>Children · Deti (birth dates · dátumy narodenia)</h3>
+      <div class="kids" id="sKids"></div>
+      <button class="b" onclick="simKid()">➕ Child · Dieťa</button>
+      <div class="row" style="margin-top:12px"><button class="b pri" onclick="runSim()">▶ Run the simulation · Spustiť simuláciu</button></div>
+    </div>
+  </div>
+  <div id="simOut"></div>
 </section>
 
 <section class="tab" id="tab-param">
@@ -766,8 +801,8 @@ function yearMonths(e, y) {
   }
   return out;
 }
-function rzData(e, y) {
-  DB.annual = DB.annual || {}; const A = ((DB.annual[y] || {})[e.id]) || {};
+function rzData(e, y, given) {
+  DB.annual = DB.annual || {}; const A = given || ((DB.annual[y] || {})[e.id]) || {};
   const ms = yearMonths(e, y), S = k => round2(ms.reduce((a, x) => a + x[k], 0)), o = k => num(A[k]);
   const income = round2(S('income') + o('oInc')), social = round2(S('social') + o('oSoc')), health = round2(S('health') + o('oHea'));
   const adv = round2(S('adv') + o('oAdv')), bonusPaid = round2(S('bonus') + o('oBon'));
@@ -807,18 +842,23 @@ function renderRZ() {
     ${nf('oHea', 'Other employer: health insurance', 'poistné na zdravotné poistenie')}${nf('oAdv', 'Other employer: tax advances', 'zrazené preddavky')}${nf('oBon', 'Other employer: child bonus paid', 'vyplatený daňový bonus')}`;
   $('rzWho').onchange = ev => { window.RZWHO = ev.target.value; renderRZ(); };
   $('rzForm').querySelectorAll('[data-a]').forEach(i => i.onchange = () => { A[i.dataset.a] = i.tagName === 'SELECT' ? i.value : i.value; save(); renderRZ(); });
-  const d = rzData(e, y), E = DB.employer, w = [];
+  const out = rzDocHTML(e, y, A);
+  $('rzWarn').innerHTML = out.warn.length ? `<div class="warn">${out.warn.map(esc).join('<br>')}</div>` : '';
+  $('rzDoc').innerHTML = out.html;
+}
+// the annual reconciliation sheet of one employee (also used by the simulation)
+function rzDocHTML(e, y, A) {
+  const d = rzData(e, y, A), E = DB.employer, w = [];
   if (d.ms.some(x => x.projected)) w.push(`Months not yet paid are projected from the current settings · Mesiace, ktoré ešte neboli vyplatené, sú odhadnuté (${d.ms.filter(x => x.projected).map(x => MONTHS_EN[x.m - 1]).join(', ')}).`);
   if (e.payType === 'net') w.push('Fixed net salary: the refund or extra tax follows the employment contract (whether the embassy or the employee keeps or bears it) · Pevná čistá mzda: s preplatkom/nedoplatkom sa naloží podľa zmluvy.');
   if (num(A.dds) > RZ2026.ddsMax) w.push(`III. pillar deduction limited to ${RZ2026.ddsMax} € · Odpočet príspevkov na DDS najviac ${RZ2026.ddsMax} €.`);
-  $('rzWarn').innerHTML = w.length ? `<div class="warn">${w.map(esc).join('<br>')}</div>` : '';
   const row = (en, sk, v, cls) => `<tr${cls ? ` class="${cls}"` : ''}><td>${en} <span class="sk">${sk}</span></td><td class="n">${typeof v === 'number' ? fmt(v) + ' €' : v}</td></tr>`;
   const head = (en, sk) => `<div class="hd"><div><h4>${en}</h4><span class="sk">${sk}</span><br><b>${y}</b> · tax year · zdaňovacie obdobie</div>
     <div style="text-align:right"><b>${esc(E.name)}</b>${E.nameSk ? `<br><span class="sk">${esc(E.nameSk)}</span>` : ''}<br>${esc(E.addr)}${E.dic ? '<br>DIČ ' + esc(E.dic) : ''}</div></div>
     <table><tr><td>Employee <span class="sk">Zamestnanec</span></td><td><b>${esc(e.name)}</b>${e.rc ? ' · rodné číslo ' + esc(e.rc) : ''}${e.addr ? '<br>' + esc(e.addr) : ''}</td></tr>
       <tr><td>Months of employment <span class="sk">Mesiace zamestnania</span></td><td>${d.ms.map(x => x.m).join(', ')} (${d.ms.length})</td></tr></table>`;
   const res = d.result;
-  $('rzDoc').innerHTML = `<div class="doc">${head('Annual tax reconciliation', 'Výpočet ročného zúčtovania preddavkov na daň z príjmov zo závislej činnosti (§ 38 zákona o dani z príjmov)')}
+  const html = `<div class="doc">${head('Annual tax reconciliation', 'Výpočet ročného zúčtovania preddavkov na daň z príjmov zo závislej činnosti (§ 38 zákona o dani z príjmov)')}
     ${A.request === 'pot' ? '<p class="bad">The employee did not ask for the reconciliation: issue the certificate only · Zamestnanec nepožiadal o ročné zúčtovanie: vystavte len potvrdenie.</p>' : ''}
     <table><tr><th>Item · Položka</th><th class="n">Amount · Suma</th></tr>
       ${row('Total taxable employment income', 'Úhrn zdaniteľných príjmov zo závislej činnosti', d.income)}
@@ -842,6 +882,7 @@ function renderRZ() {
     <table><tr><th>Month · Mesiac</th><th class="n">Income · Príjem</th><th class="n">Social · SP</th><th class="n">Health · ZP</th><th class="n">Allowance · NČZD</th><th class="n">Tax advance · Preddavok</th><th class="n">Bonus</th></tr>
       ${d.ms.map(x => `<tr><td>${MONTHS_EN[x.m - 1]} · ${MONTHS_SK[x.m - 1]}${x.projected ? ' <span class="pill y">projected</span>' : ''}</td><td class="n">${fmt(x.income)}</td><td class="n">${fmt(x.social)}</td><td class="n">${fmt(x.health)}</td><td class="n">${fmt(x.nczd)}</td><td class="n">${fmt(x.adv)}</td><td class="n">${fmt(x.bonus)}</td></tr>`).join('')}</table>
     <div class="sign"><div>Prepared by, date · Vypracoval, dátum</div><div>Employer's stamp and signature · Pečiatka a podpis zamestnávateľa</div></div></div>`;
+  return {warn: w, html};
 }
 function printRZ(id) {
   document.querySelectorAll('.doc').forEach(x => x.classList.remove('go')); const el = $(id).querySelector('.doc'); if (!el) return; el.classList.add('go');
@@ -863,13 +904,18 @@ function renderPot() {
     ${inp('ex05', 'Row 05 exempt income (€)', 'r. 05 oslobodené (max 200 €)', 'number', '0')}${inp('ex06', 'Row 06 exempt income (€)', 'r. 06 oslobodené (max 2 000 €)', 'number', '0')}`;
   $('potWho').onchange = ev => { window.RZWHO = ev.target.value; renderPot(); };
   $('potForm').querySelectorAll('[data-a]').forEach(i => i.onchange = () => { A[i.dataset.a] = i.value; save(); renderPot(); });
-  const d = rzData(e, y), E = DB.employer, own = k => round2(d[k] - num(A[{income: 'oInc', social: 'oSoc', health: 'oHea', adv: 'oAdv', bonusPaid: 'oBon'}[k]]));
+  const out = potDocHTML(e, y, A);
+  $('potWarn').innerHTML = out.warn.length ? `<div class="warn">${out.warn.map(esc).join('<br>')}</div>` : '';
+  $('potDoc').innerHTML = out.html;
+}
+// the tax confirmation of one employee (also used by the simulation)
+function potDocHTML(e, y, A) {
+  const d = rzData(e, y, A), E = DB.employer, own = k => round2(d[k] - num(A[{income: 'oInc', social: 'oSoc', health: 'oHea', adv: 'oAdv', bonusPaid: 'oBon'}[k]]));
   const inc = own('income'), contrib = round2(own('social') + own('health')), zd = round2(inc - contrib);
   const w = [];
   if (d.ms.some(x => x.projected)) w.push(`Months not yet paid are projected: issue the confirmation after the last pay of the year · Neuplynuté mesiace sú odhadnuté (${d.ms.filter(x => x.projected).map(x => MONTHS_EN[x.m - 1]).join(', ')}).`);
   if (!e.rc) w.push("The employee's rodné číslo is missing: add it in the employee's details · Chýba rodné číslo zamestnanca.");
   if (num(A.ex05) > 200) w.push('Row 05 is limited to 200 € · r. 05 najviac 200 €.'); if (num(A.ex06) > 2000) w.push('Row 06 is limited to 2 000 € · r. 06 najviac 2 000 €.');
-  $('potWarn').innerHTML = w.length ? `<div class="warn">${w.map(esc).join('<br>')}</div>` : '';
   const ms = d.ms.map(x => x.m), from = ms.length ? new Date(y, ms[0] - 1, 1) : null, to = ms.length ? new Date(y, ms[ms.length - 1], 0) : null;
   const st = parseISO(e.start), en = parseISO(e.end), dFrom = st && st > from ? st : from, dTo = en && en < to ? en : to;
   const fd = x => x ? x.toLocaleDateString('sk-SK') : '';
@@ -879,7 +925,7 @@ function renderPot() {
     return {k, months};
   }).filter(x => x.months.length);
   const issue = parseISO(A.potDate) || new Date();
-  $('potDoc').innerHTML = `<div class="doc">
+  const html = `<div class="doc">
     <div class="hd"><div><h4>POTVRDENIE o zdaniteľných príjmoch fyzickej osoby zo závislej činnosti</h4>
       <span>a ďalších údajoch podľa § 39 ods. 5 zákona č. 595/2003 Z. z. o dani z príjmov za zdaňovacie obdobie roku <b>${y}</b></span><br>
       <span class="en">CONFIRMATION of an individual's taxable income from employment and other data under § 39(5) of Income Tax Act No. 595/2003 Coll., tax year ${y}</span></div>
@@ -914,6 +960,71 @@ function renderPot() {
       ${row('', 'Vypracoval / telefón', 'Prepared by / phone', `${esc(A.prepBy || '')}${A.tel ? ' · ' + esc(A.tel) : ''}` || '—')}${row('', 'Dátum vystavenia', 'Date of issue', fd(issue))}</table>
     <p class="en" style="margin-top:8px">Deadline: by 10 February ${y + 1} if the employee asked by 5 February, otherwise by 10 March ${y + 1} · Lehota: do 10. februára ${y + 1}, ak zamestnanec požiadal do 5. februára, inak do 10. marca ${y + 1}.</p>
     <div class="sign"><div>Odtlačok pečiatky a podpis zamestnávateľa<br><span class="en">Employer's stamp and signature</span></div><div>Prevzal zamestnanec (dátum, podpis)<br><span class="en">Received by the employee (date, signature)</span></div></div></div>`;
+  return {warn: w, html};
+}
+
+
+// ===================== full simulation for one employee from the net salary =====================
+window.SIMKIDS = [];
+function simKid() { SIMKIDS.push({name: '', birth: ''}); renderSimKids(); }
+function renderSimKids() {
+  $('sKids').innerHTML = SIMKIDS.map((k, i) => `<div class="k"><input placeholder="Name · Meno" value="${esc(k.name)}" oninput="SIMKIDS[${i}].name=this.value">
+    <input type="date" value="${esc(k.birth)}" oninput="SIMKIDS[${i}].birth=this.value"> <button class="b danger" onclick="SIMKIDS.splice(${i},1);renderSimKids()">✕</button></div>`).join('') || '<p class="note">No children · Bez detí.</p>';
+}
+function initSim() {
+  if ($('sYear').value) return;
+  $('sYear').value = CUR.y; $('sPay').value = DB.employer.payDay || 20;
+  $('sStart').innerHTML = MONTHS_EN.map((m, i) => `<option value="${i + 1}">${m} · ${MONTHS_SK[i]}</option>`).join('');
+  $('sPen').innerHTML = Object.entries(PENS).map(([v, n]) => `<option value="${v}">${esc(n)}</option>`).join('');
+  renderSimKids();
+}
+function simEmployee() {
+  const y = num($('sYear').value) || CUR.y, sm = num($('sStart').value) || 1;
+  return {y, payDay: Math.min(31, Math.max(1, num($('sPay').value) || 20)), e: Object.assign(blankEmp(), {
+    id: 'sim', name: $('sName').value.trim() || 'Simulation', payType: 'net', net: num($('sNet').value), insurer: $('sIns').value,
+    dss: $('sDss').checked, ztp: $('sZtp').checked, nczd: $('sNczd').checked, pension: $('sPen').value,
+    start: iso(new Date(y, sm - 1, 1)), children: SIMKIDS.filter(k => k.birth).map(k => ({...k}))})};
+}
+function runSim() {
+  initSim();
+  const {y, payDay, e} = simEmployee();
+  if (!(e.net > 0)) { alert('Enter the net salary · Zadajte čistú mzdu.'); return; }
+  const ms = yearMonths(e, y).map(x => x.r), S = f => round2(ms.reduce((a, r) => a + f(r), 0));
+  const T = (en, sk) => `${en} <span class="note" style="font-style:italic">${sk}</span>`;
+  const rows = ms.map(r => {
+    const pay = new Date(r.y, r.m - 1, Math.min(payDay, new Date(r.y, r.m, 0).getDate())), due = nextWorkday(pay);
+    return {r, pay, due, rep: nextWorkday(addDays(due, 3)), tax: nextWorkday(addDays(due, 5)), sum: nextWorkday(new Date(r.y, r.m + 1, 0)),
+      sp: round2(r.eeS + r.erS), hi: round2(r.hEe + r.hEr), tx: round2(r.adv - r.bonusT)};
+  });
+  const f0 = ms[0], ins = INSURERS[e.insurer], fdd = d => d.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'});
+  const out = [];
+  out.push(`<div class="simblock"><div class="card"><h3 style="margin-top:0">${esc(e.name)} – ${y} · ${T('summary', 'súhrn')}</h3>
+    <div class="sum"><div><span>Net salary · Čistá mzda</span><b>${eur(e.net)}</b></div><div><span>Gross pay · Hrubá mzda</span><b>${eur(f0.gross)}</b></div>
+      <div><span>Employee contributions · Odvody zamestnanca</span><b>${eur(round2(f0.eeS + f0.hEe))}</b></div><div><span>Income tax · Preddavok na daň</span><b>${eur(f0.adv)}</b></div>
+      <div><span>Employer contributions · Odvody zamestnávateľa</span><b>${eur(round2(f0.erS + f0.hEr))}</b></div><div><span>Monthly cost · Mesačná cena práce</span><b>${eur(f0.cost)}</b></div>
+      <div><span>Months · Mesiace</span><b>${ms.length}</b></div><div><span>Cost for the year · Ročná cena práce</span><b>${eur(S(r => r.cost))}</b></div></div>
+    <p class="note">${esc(ins)}${e.dss ? ' · II. pillar' : ''}${e.children.length ? ` · ${e.children.length} child(ren), bonus included in the net` : ' · no children'} · pay on the ${payDay}th · ${T('the embassy pays social insurance, health insurance and tax', 'veľvyslanectvo platí sociálne, zdravotné poistenie a daň')}</p></div>
+    <h3>${T('Month by month', 'Po mesiacoch')}</h3><div class="scroll"><table class="t"><tr><th>Month · Mesiac</th><th class="n">Gross · Hrubá</th><th class="n">Social · SP</th><th class="n">Health · ZP</th>
+      <th class="n">Tax · Daň</th><th class="n">Bonus</th><th class="n">Net · Čistá</th><th class="n">Employer · Zamestnávateľ</th><th class="n">Cost · Cena práce</th></tr>
+      ${rows.map(({r}) => `<tr><td>${MONTHS_EN[r.m - 1]} · ${MONTHS_SK[r.m - 1]}</td><td class="n">${fmt(r.gross)}</td><td class="n">${fmt(r.eeS)}</td><td class="n">${fmt(r.hEe)}</td><td class="n">${fmt(r.adv)}</td><td class="n">${fmt(r.bonusT)}</td><td class="n"><b>${fmt(r.net)}</b></td><td class="n">${fmt(round2(r.erS + r.hEr))}</td><td class="n">${fmt(r.cost)}</td></tr>`).join('')}
+      <tr class="tot"><td>Year · Rok</td><td class="n">${fmt(S(r => r.gross))}</td><td class="n">${fmt(S(r => r.eeS))}</td><td class="n">${fmt(S(r => r.hEe))}</td><td class="n">${fmt(S(r => r.adv))}</td><td class="n">${fmt(S(r => r.bonusT))}</td><td class="n">${fmt(S(r => r.net))}</td><td class="n">${fmt(S(r => r.erS + r.hEr))}</td><td class="n">${fmt(S(r => r.cost))}</td></tr></table></div>
+    <h3>${T('Payments and declarations', 'Platby a výkazy')}</h3><div class="scroll"><table class="t"><tr><th>Month · Mesiac</th><th>Net to the employee · Výplata</th><th>Sociálna poisťovňa (VPP + payment)</th><th>${esc(ins)}</th><th>Health report · Výkaz ZP</th><th>Tax office · Daňový úrad</th><th>Prehľad</th></tr>
+      ${rows.map(x => `<tr><td>${MONTHS_EN[x.r.m - 1]}</td><td>${fdd(x.pay)} · ${fmt(x.r.net)} €</td><td>${fdd(x.due)} · ${fmt(x.sp)} €</td><td>${fdd(x.due)} · ${fmt(x.hi)} €</td><td>${fdd(x.rep)}</td><td>${fdd(x.tax)} · ${fmt(x.tx)} €</td><td>${fdd(x.sum)}</td></tr>`).join('')}
+      <tr class="tot"><td>Year · Rok</td><td>${fmt(S(r => r.net))} €</td><td>${fmt(rows.reduce((a, x) => a + x.sp, 0))} €</td><td>${fmt(rows.reduce((a, x) => a + x.hi, 0))} €</td><td></td><td>${fmt(rows.reduce((a, x) => a + x.tx, 0))} €</td><td></td></tr></table></div>
+    <p class="note">${T('Hiring: register the employee with Sociálna poisťovňa before the first day of work, and with the health insurer within 8 working days. Annual: tax confirmation by 10 February (if asked by 5 February) or 10 March; reconciliation by 31 March if asked by 15 February; annual report to the tax office by 30 April.',
+      'Prihláška do Sociálnej poisťovne pred začiatkom práce, do zdravotnej poisťovne do 8 pracovných dní. Ročne: potvrdenie do 10. februára (ak požiada do 5. februára) alebo do 10. marca; ročné zúčtovanie do 31. marca, ak požiada do 15. februára; hlásenie do 30. apríla.')}</p></div>`);
+  out.push(...ms.map(r => `<div class="simblock">${slipHTML(r)}</div>`));
+  const A = {request: 'rz'};
+  out.push(`<div class="simblock">${rzDocHTML(e, y, A).html}</div>`, `<div class="simblock">${potDocHTML(e, y, A).html}</div>`);
+  $('simOut').innerHTML = `<div class="row noprint"><button class="b pri" onclick="printSim()">🖨 Print the full simulation · Tlačiť</button>
+    <button class="b" onclick="simAdd()">➕ Add to the payroll · Pridať do miezd</button></div>` + out.join('');
+  window.SIMLAST = e;
+}
+function printSim() { document.body.classList.add('printSim'); const done = () => { document.body.classList.remove('printSim'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); window.print(); }
+function simAdd() {
+  const e = SIMLAST; if (!e) return;
+  if (!confirm(`Add ${e.name} (net ${eur(e.net)}) to the payroll? · Pridať do miezd?`)) return;
+  DB.employees.push(Object.assign(clone(e), {id: newId()})); save(); renderAll(); alert('Added · Pridané.');
 }
 
 // ===================== parameters =====================
@@ -981,6 +1092,7 @@ function renderAll() {
   if (on === 'tab-param') renderParams();
   if (on === 'tab-rz') renderRZ();
   if (on === 'tab-pot') renderPot();
+  if (on === 'tab-sim') initSim();
   if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
 }
 load();
