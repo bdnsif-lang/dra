@@ -151,9 +151,11 @@
   <div class="card"><h3 style="margin-top:0">➕ Ajout rapide : le nom et le salaire net suffisent</h3>
     <div class="row"><label class="fld">Nom<input id="qName" style="padding:5px 6px;border:1px solid #bfcdc5;border-radius:4px;min-width:200px"></label>
       <label class="fld">Salaire net fixe (€)<input id="qNet" type="number" step="0.01" style="padding:5px 6px;border:1px solid #bfcdc5;border-radius:4px;width:130px"></label>
+      <label class="fld">Date d'entrée<input id="qStart" type="date" style="padding:5px 6px;border:1px solid #bfcdc5;border-radius:4px"></label>
+      <label class="fld">Date de sortie (si connue)<input id="qEnd" type="date" style="padding:5px 6px;border:1px solid #bfcdc5;border-radius:4px"></label>
       <label class="fld">Caisse santé<select id="qIns" style="padding:5px 6px"><option value="25">VšZP</option><option value="24">Dôvera</option><option value="27">Union</option></select></label>
       <button class="b pri" style="align-self:flex-end" onclick="quickAdd()">Ajouter</button></div>
-    <p class="note" style="margin-bottom:0">Le programme calcule le brut, les cotisations, l'impôt, la fiche de paie et les déclarations. L'ambassade paie tout (cotisations sociales, assurance santé, impôt). Sans enfant ni II. pilier par défaut : si besoin, ouvrez « Modifier » pour ajouter des enfants ou d'autres détails.</p></div>
+    <p class="note" style="margin-bottom:0">Tous les mois depuis la date d'entrée (jusqu'au mois en cours ou à la date de sortie) sont ajoutés à la paie automatiquement. Entrée après le 5 du mois : le net de ce mois est calculé au prorata des jours calendaires (net fixe × jours travaillés ÷ jours du mois) ; même règle pour le mois de sortie. Les autres mois gardent le net fixe. Le programme calcule le brut, les cotisations, l'impôt, la fiche de paie et les déclarations. L'ambassade paie tout (cotisations sociales, assurance santé, impôt). Sans enfant ni II. pilier par défaut : si besoin, ouvrez « Modifier » pour ajouter des enfants ou d'autres détails.</p></div>
   <div class="row"><button class="b" onclick="editEmp(null)">Ajouter avec tous les détails…</button></div>
   <div class="scroll"><table class="t" id="empTable"></table></div>
   <div id="empEdit"></div>
@@ -362,6 +364,7 @@ function load() {
     SEED.forEach(x => { if (!DB.employees.some(y => y.name === x.name)) DB.employees.push(Object.assign(blankEmp(), x)); });
     seedPeriods(); DB.seedV = SEED_V; save();
   }
+  let np = 0; DB.employees.forEach(e => { np += ensurePeriods(e).length; }); if (np) save();
   if (DB.employer.name === "Ambassade d'Algérie") { DB.employer.name = "Ambassade d'Algérie à Bratislava"; save(); }   // name saved by an earlier version
 }
 function saveFile() {
@@ -407,7 +410,7 @@ $('ficheF').onchange = ev => {
         || DB.employees.find(x => !x.rc && norm(x.name) === norm(d.firstName))        // employee entered earlier with the first name only (Seif…)
         || ((c => c.length === 1 ? c[0] : null)(DB.employees.filter(x => !x.rc && norm(x.name).length >= 3 && norm(d.firstName).startsWith(norm(x.name)))));   // short name (Vero → Veronika)
       const isNew = !e; if (isNew) e = blankEmp();
-      const oldNet = e.net; ficheToEmp(d, e); if (isNew) DB.employees.push(e);
+      const oldNet = e.net; ficheToEmp(d, e); if (isNew) DB.employees.push(e); ensurePeriods(e);
       out.push(`${isNew ? '➕ ajouté' : '✓ mis à jour'} : ${e.name} — net ${fmt(e.net)} €${!isNew && oldNet && oldNet !== e.net ? ` (avant ${fmt(oldNet)} €, à vérifier)` : ''}${e.children.length ? ` · ${e.children.length} enfant(s)` : ''}${d.nczd === 'no' ? ' · sans abattement (NČZD)' : ''}${d.taxRes === 'no' ? ' · ⚠ non résident fiscal' : ''}${d.insurer === 'none' ? ' · ⚠ pas d\'assurance santé SK' : ''}`);
     });
     save(); renderAll(); alert('Import des fiches employés\n\n' + out.join('\n'));
@@ -507,8 +510,9 @@ function editEmp(id) {
     box.querySelectorAll('[data-k]').forEach(i => { const k = i.dataset.k; e[k] = i.type === 'checkbox' ? i.checked : i.type === 'number' ? num(i.value) : i.value; });
     e.children = KIDS.filter(k => k.birth);
     if (!e.name.trim()) { alert('Indiquez le nom de l\'employé.'); return; }
+    if (e.start && e.end && e.end < e.start) { alert('La date de sortie est avant la date d\'entrée.'); return; }
     if (!id) DB.employees.push(e);
-    save(); $('empEdit').innerHTML = ''; renderAll();
+    ensurePeriods(e); save(); $('empEdit').innerHTML = ''; renderAll();
   };
   $('empEdit').scrollIntoView({behavior: 'smooth'});
 }
@@ -517,11 +521,27 @@ function renderKids() {
     <input type="date" value="${esc(k.birth)}" oninput="KIDS[${i}].birth=this.value"> <input placeholder="Rodné číslo" style="width:120px" value="${esc(k.rc || '')}" oninput="KIDS[${i}].rc=this.value"> <button class="b danger" onclick="KIDS.splice(${i},1);renderKids()">✕</button></div>`).join('') || '<p class="note">Aucun enfant déclaré.</p>';
 }
 function addKid() { KIDS.push({name: '', birth: '', rc: ''}); renderKids(); }
+// Creates the payroll months from the start date (not before January of the parameters' year) up to the current month or the end date
+function ensurePeriods(e) {
+  const st = parseISO(e.start); if (!st) return [];
+  const y0 = DB.params.year || 2026, now = new Date(), en = parseISO(e.end);
+  let d = st < new Date(y0, 0, 1) ? new Date(y0, 0, 1) : new Date(st.getFullYear(), st.getMonth(), 1);
+  const stop = en && en < now ? en : now, added = [], pd = DB.employer.payDay || 20;
+  for (; d <= stop; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    const pk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!DB.periods[pk]) { DB.periods[pk] = {inputs: {}, done: {}, payday: iso(new Date(d.getFullYear(), d.getMonth(), Math.min(pd, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())))}; added.push(pk); }
+  }
+  return added;
+}
 function quickAdd() {
   const name = $('qName').value.trim(), net = num($('qNet').value);
   if (!name || !(net > 0)) { alert('Indiquez le nom et le salaire net.'); return; }
-  DB.employees.push(Object.assign(blankEmp(), {name, net, insurer: $('qIns').value}));
-  $('qName').value = ''; $('qNet').value = ''; save(); renderAll();
+  const start = $('qStart').value, end = $('qEnd').value;
+  if (start && end && end < start) { alert('La date de sortie est avant la date d\'entrée.'); return; }
+  const e = Object.assign(blankEmp(), {name, net, insurer: $('qIns').value, start, end, active: !end || parseISO(end) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)});
+  DB.employees.push(e); const n = ensurePeriods(e);
+  $('qName').value = ''; $('qNet').value = ''; $('qStart').value = ''; $('qEnd').value = ''; save(); renderAll();
+  if (n.length) alert(`${name} : ${n.length} mois de paie ajouté(s) (${n[0]} → ${n[n.length - 1]}).`);
 }
 function delEmp(id) { const e = DB.employees.find(x => x.id === id); if (!confirm(`Supprimer ${e.name} et ses données de paie ?`)) return; DB.employees = DB.employees.filter(x => x.id !== id); save(); renderAll(); }
 
@@ -675,12 +695,14 @@ function grossForNet(e, target, first) {
   return L / 100;
 }
 function calcNet(e, y, m, inp, r, c) {
-  const P = DB.params, part = c.outside ? (c.cal.wd - c.outside) / c.cal.wd : 1;
+  // incomplete month: start after the 5th → net × calendar days employed ÷ days of the month (start on the 1st–5th = full month); same for the leaving month
+  const P = DB.params, st = parseISO(e.start), en = parseISO(e.end), D = c.cal.days, inM = d => d && d.getFullYear() === y && d.getMonth() === m - 1;
+  const dFrom = inM(st) && st.getDate() > 5 ? st.getDate() : 1, dTo = inM(en) ? en.getDate() : D, days = Math.max(0, dTo - dFrom + 1), part = days / D;
   const agreed = round2(num(e.net) * part), nb = num(inp.bonus), target = round2(agreed + nb);
   if (!(num(e.net) > 0)) r.warn.push('Salaire net fixe non indiqué dans la fiche de l\'employé.');
   const gross = grossForNet(e, target, c.first), base = nb ? grossForNet(e, agreed, c.first) : gross;
   r.gross = gross; r.pn = {days: c.pnDays, wd: 0, comp: 0, sp: c.pnSP, dvz: 0}; r.fixedNet = {agreed, bonus: nb, target};
-  r.lines.push(['Salaire brut', 'Hrubá mzda', `calculé pour un net fixe de ${fmt(agreed)} €${part < 1 ? ' (mois incomplet)' : ''}`, base]);
+  r.lines.push(['Salaire brut', 'Hrubá mzda', part < 1 ? `net ${fmt(num(e.net))} € × ${days}/${D} jours = ${fmt(agreed)} € (${dFrom > 1 ? 'entrée le ' + dFrom : ''}${dFrom > 1 && dTo < D ? ', ' : ''}${dTo < D ? 'sortie le ' + dTo : ''})` : `calculé pour un net fixe de ${fmt(agreed)} €`, base]);
   if (nb) r.lines.push([`Prime (pour ${fmt(nb)} € nets)`, 'Odmena', '', round2(gross - base)]);
   charges(e, gross, 0, c.first, r);
   const got = round2(gross - r.eeS - r.hEe - r.adv + r.bonusT);
