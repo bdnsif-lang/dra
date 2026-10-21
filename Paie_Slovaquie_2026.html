@@ -307,7 +307,14 @@ const KEY = 'paieSlovaquie';
 const clone = o => JSON.parse(JSON.stringify(o));
 let DB = {params: clone(P2026), employer: {name: "Ambassade d'Algérie à Bratislava", nameSk: 'Veľvyslanectvo Alžírskej demokratickej ľudovej republiky v Bratislave', addr: 'Bratislava', ico: '', dic: '', sp: '', bank: '', payDay: 20}, employees: [], periods: {}};
 // first opening on a computer: the embassy's staff as set up so far (only the net is needed, the program does the rest)
-const SEED = [{name: 'A', net: 2000, insurer: '25', dss: false, children: []}];
+const SEED_V = 2;
+const SEED = [
+  {name: 'Seif', net: 2000, insurer: '25', dss: false, children: []},
+  {name: 'Vero', net: 2200, insurer: '25', dss: false, children: [{name: 'Enfant de Vero (date de naissance à corriger)', birth: '2016-06-01', rc: ''}]},
+  {name: 'Riky', net: 1200, insurer: '25', dss: false, children: []},
+  {name: 'Sonia', net: 1200, insurer: '25', dss: false, children: []},
+  {name: 'Adam', net: 1500, insurer: '25', dss: false, children: []},
+  {name: 'Marie', net: 1200, insurer: '25', dss: false, children: []}];
 let CUR = {y: 2026, m: 1};
 const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
@@ -327,7 +334,13 @@ function save() {
 function load() {
   let s = null;
   try { s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); DB = {...DB, ...d, employer: {...DB.employer, ...(d.employer || {})}, params: {...clone(P2026), ...(d.params || {})}}; } } catch (e) {}
-  if (!s) { DB.employees = SEED.map(x => Object.assign(blankEmp(), x)); save(); }
+  if (!s) { DB.employees = SEED.map(x => Object.assign(blankEmp(), x)); DB.seedV = SEED_V; save(); }
+  else if ((DB.seedV || 1) < SEED_V) {               // earlier version held only the test employee « A » (= Seif): bring in the staff list
+    const a = DB.employees.find(x => x.name === 'A');
+    if (a) Object.assign(a, {name: 'Seif'});
+    SEED.forEach(x => { if (!DB.employees.some(y => y.name === x.name)) DB.employees.push(Object.assign(blankEmp(), x)); });
+    DB.seedV = SEED_V; save();
+  }
   if (DB.employer.name === "Ambassade d'Algérie") { DB.employer.name = "Ambassade d'Algérie à Bratislava"; save(); }   // name saved by an earlier version
 }
 function saveFile() {
