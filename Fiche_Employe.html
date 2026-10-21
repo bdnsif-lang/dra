@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fiche employé</title>
+<title>Fiche employé · Employee form</title>
 <style>
   :root { --g: #006233; --r: #d21034; --ink: #1f2a24; --mut: #5d6b63; --line: #cfdad3; --bg: #eef2ef; }
   * { box-sizing: border-box; }
@@ -16,6 +16,8 @@
   legend { font-weight: bold; color: var(--g); font-size: 15px; padding: 0 6px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px 14px; }
   label { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; font-weight: bold; color: #33413a; }
+  label .en { font-weight: normal; color: #1f4e79; }
+  .en2 { color: #1f4e79; }
   label .sk { font-weight: normal; color: var(--mut); font-style: italic; }
   input, select, textarea { padding: 7px 8px; border: 1px solid #b7c6bd; border-radius: 5px; font: 14px Arial, sans-serif; color: var(--ink); background: #fff; font-weight: normal; }
   input:focus, select:focus { outline: 2px solid #9cc9ae; border-color: var(--g); }
@@ -46,124 +48,125 @@
 </head>
 <body>
 <header>
-  <h1>Fiche employé · Osobný dotazník zamestnanca</h1>
-  <p id="emb">Ambassade d'Algérie à Bratislava · Veľvyslanectvo Alžírskej demokratickej ľudovej republiky v Bratislave</p>
+  <h1>Fiche employé · Employee information form · Osobný dotazník zamestnanca</h1>
+  <p id="emb">Ambassade d'Algérie à Bratislava · Embassy of Algeria in Bratislava · Veľvyslanectvo Alžírskej demokratickej ľudovej republiky v Bratislave</p>
 </header>
 <main>
   <div class="intro">
     <b>Merci de remplir cette fiche.</b> Elle sert uniquement à préparer votre paie et les déclarations obligatoires (Sociálna poisťovňa, assurance santé, administration fiscale).
     Les champs marqués <span style="color:var(--r)">*</span> sont obligatoires. Vos réponses sont gardées sur cet ordinateur pendant la saisie.
     À la fin, cliquez <b>« Enregistrer la fiche »</b> : un fichier est créé, à remettre au service de la paie. Imprimez aussi la fiche pour la signer.<br>
+    <span class="en2"><b>Please fill in this form.</b> It is used only to prepare your salary and the mandatory reports (Social Insurance Agency, health insurer, tax office). Fields marked * are required. Your answers are kept on this computer while you type. At the end click « Save »: a file is created, give it to the payroll office. Also print the form and sign it.</span><br>
     <i style="color:var(--mut)">Prosíme o vyplnenie. Údaje slúžia len na spracovanie mzdy a povinné hlásenia (Sociálna poisťovňa, zdravotná poisťovňa, finančná správa). Na konci kliknite « Uložiť » a súbor odovzdajte mzdovej učtárni; formulár vytlačte a podpíšte.</i>
   </div>
 
   <form id="f" autocomplete="off" novalidate>
-  <fieldset><legend>1 · Identité · Osobné údaje</legend>
+  <fieldset><legend>1 · Identité · Identity · Osobné údaje</legend>
     <div class="grid">
-      <label class="req">Prénom<span class="sk">Meno</span><input name="firstName" required></label>
-      <label class="req">Nom<span class="sk">Priezvisko</span><input name="lastName" required></label>
-      <label class="req">Nom de naissance<span class="sk">Rodné priezvisko</span><input name="birthName" required></label>
-      <label>Titre<span class="sk">Titul</span><input name="title" placeholder="Ing., Mgr.…"></label>
-      <label class="req">Sexe<span class="sk">Pohlavie</span><select name="sex" required><option value=""></option><option value="F">Femme · žena</option><option value="M">Homme · muž</option></select></label>
-      <label class="req">Date de naissance<span class="sk">Dátum narodenia</span><input name="birthDate" type="date" required></label>
-      <label class="req">Lieu de naissance<span class="sk">Miesto narodenia</span><input name="birthPlace" required></label>
-      <label class="req">Nationalité<span class="sk">Štátna príslušnosť</span><input name="nationality" required placeholder="slovenská / SK"></label>
-      <label>Numéro personnel (rodné číslo)<span class="sk">Rodné číslo</span><input name="rc" placeholder="850315/1234" inputmode="numeric"><span class="err" data-e="rc"></span></label>
-      <label>Pièce d'identité (si pas de rodné číslo)<span class="sk">Doklad totožnosti (ak nemáte rodné číslo)</span><input name="idDoc" placeholder="Passeport n° … · pas č. …"></label>
-      <label class="req">Situation familiale<span class="sk">Rodinný stav</span><select name="marital" required><option value=""></option><option value="single">Célibataire · slobodný/á</option><option value="married">Marié(e) · ženatý/vydatá</option><option value="divorced">Divorcé(e) · rozvedený/á</option><option value="widowed">Veuf/veuve · vdovec/vdova</option></select></label>
+      <label class="req">Prénom<span class="en">First name</span><span class="sk">Meno</span><input name="firstName" required></label>
+      <label class="req">Nom<span class="en">Surname</span><span class="sk">Priezvisko</span><input name="lastName" required></label>
+      <label class="req">Nom de naissance<span class="en">Birth surname</span><span class="sk">Rodné priezvisko</span><input name="birthName" required></label>
+      <label>Titre<span class="en">Title</span><span class="sk">Titul</span><input name="title" placeholder="Ing., Mgr.…"></label>
+      <label class="req">Sexe<span class="en">Sex</span><span class="sk">Pohlavie</span><select name="sex" required><option value=""></option><option value="F">Femme · Female · žena</option><option value="M">Homme · Male · muž</option></select></label>
+      <label class="req">Date de naissance<span class="en">Date of birth</span><span class="sk">Dátum narodenia</span><input name="birthDate" type="date" required></label>
+      <label class="req">Lieu de naissance<span class="en">Place of birth</span><span class="sk">Miesto narodenia</span><input name="birthPlace" required></label>
+      <label class="req">Nationalité<span class="en">Nationality</span><span class="sk">Štátna príslušnosť</span><input name="nationality" required placeholder="slovenská / SK"></label>
+      <label>Numéro personnel (rodné číslo)<span class="en">Personal number (rodné číslo)</span><span class="sk">Rodné číslo</span><input name="rc" placeholder="850315/1234" inputmode="numeric"><span class="err" data-e="rc"></span></label>
+      <label>Pièce d'identité (si pas de rodné číslo)<span class="en">ID document (if no rodné číslo)</span><span class="sk">Doklad totožnosti (ak nemáte rodné číslo)</span><input name="idDoc" placeholder="Passeport n° … · pas č. …"></label>
+      <label class="req">Situation familiale<span class="en">Marital status</span><span class="sk">Rodinný stav</span><select name="marital" required><option value=""></option><option value="single">Célibataire · Single · slobodný/á</option><option value="married">Marié(e) · Married · ženatý/vydatá</option><option value="divorced">Divorcé(e) · Divorced · rozvedený/á</option><option value="widowed">Veuf/veuve · Widowed · vdovec/vdova</option></select></label>
     </div>
   </fieldset>
 
-  <fieldset><legend>2 · Adresse et contact · Adresa a kontakt</legend>
+  <fieldset><legend>2 · Adresse et contact · Address and contact · Adresa a kontakt</legend>
     <div class="grid">
-      <label class="req">Rue et numéro<span class="sk">Ulica a číslo</span><input name="street" required></label>
-      <label class="req">Code postal<span class="sk">PSČ</span><input name="zip" required inputmode="numeric" placeholder="811 03"><span class="err" data-e="zip"></span></label>
-      <label class="req">Ville<span class="sk">Obec</span><input name="city" required></label>
-      <label class="req">Pays<span class="sk">Štát</span><input name="country" required value="Slovensko"></label>
-      <label>Adresse en Slovaquie, si différente<span class="sk">Kontaktná adresa na Slovensku, ak je iná</span><input name="addrSk"></label>
-      <label class="req">Téléphone<span class="sk">Telefón</span><input name="phone" required inputmode="tel"></label>
-      <label>E-mail<span class="sk">E-mail</span><input name="email" type="email"></label>
+      <label class="req">Rue et numéro<span class="en">Street and number</span><span class="sk">Ulica a číslo</span><input name="street" required></label>
+      <label class="req">Code postal<span class="en">Postcode</span><span class="sk">PSČ</span><input name="zip" required inputmode="numeric" placeholder="811 03"><span class="err" data-e="zip"></span></label>
+      <label class="req">Ville<span class="en">Town / city</span><span class="sk">Obec</span><input name="city" required></label>
+      <label class="req">Pays<span class="en">Country</span><span class="sk">Štát</span><input name="country" required value="Slovensko"></label>
+      <label>Adresse en Slovaquie, si différente<span class="en">Address in Slovakia, if different</span><span class="sk">Kontaktná adresa na Slovensku, ak je iná</span><input name="addrSk"></label>
+      <label class="req">Téléphone<span class="en">Phone</span><span class="sk">Telefón</span><input name="phone" required inputmode="tel"></label>
+      <label>E-mail<span class="en">E-mail</span><span class="sk">E-mail</span><input name="email" type="email"></label>
     </div>
   </fieldset>
 
-  <fieldset><legend>3 · Emploi et salaire · Pracovný pomer a mzda</legend>
+  <fieldset><legend>3 · Emploi et salaire · Employment and salary · Pracovný pomer a mzda</legend>
     <div class="grid">
-      <label class="req">Poste<span class="sk">Pracovná pozícia</span><input name="job" required></label>
-      <label class="req">Date d'entrée<span class="sk">Dátum nástupu</span><input name="start" type="date" required></label>
-      <label class="req">Contrat<span class="sk">Pracovná zmluva</span><select name="contract" required><option value="indef">Durée indéterminée · na dobu neurčitú</option><option value="fixed">Durée déterminée · na dobu určitú</option></select></label>
-      <label class="fixed-only hidden">Fin du contrat<span class="sk">Zmluva do</span><input name="contractTo" type="date"></label>
-      <label class="req">Heures par semaine<span class="sk">Týždenný pracovný čas (h)</span><input name="hours" type="number" step="0.5" min="1" max="60" value="40" required></label>
-      <label class="req">Salaire net mensuel convenu (€)<span class="sk">Dohodnutá čistá mesačná mzda (€)</span><input name="net" type="number" step="0.01" min="0" required></label>
-      <label class="req">IBAN pour le salaire<span class="sk">IBAN na výplatu mzdy</span><input name="iban" required placeholder="SK.. .... .... .... .... ...."><span class="err" data-e="iban"></span></label>
-      <label>Banque et BIC/SWIFT (compte étranger)<span class="sk">Banka a BIC/SWIFT (zahraničný účet)</span><input name="bic"></label>
+      <label class="req">Poste<span class="en">Job title</span><span class="sk">Pracovná pozícia</span><input name="job" required></label>
+      <label class="req">Date d'entrée<span class="en">Start date</span><span class="sk">Dátum nástupu</span><input name="start" type="date" required></label>
+      <label class="req">Contrat<span class="en">Contract</span><span class="sk">Pracovná zmluva</span><select name="contract" required><option value="indef">Durée indéterminée · Indefinite · na dobu neurčitú</option><option value="fixed">Durée déterminée · Fixed term · na dobu určitú</option></select></label>
+      <label class="fixed-only hidden">Fin du contrat<span class="en">Contract end date</span><span class="sk">Zmluva do</span><input name="contractTo" type="date"></label>
+      <label class="req">Heures par semaine<span class="en">Hours per week</span><span class="sk">Týždenný pracovný čas (h)</span><input name="hours" type="number" step="0.5" min="1" max="60" value="40" required></label>
+      <label class="req">Salaire net mensuel convenu (€)<span class="en">Agreed monthly net salary (€)</span><span class="sk">Dohodnutá čistá mesačná mzda (€)</span><input name="net" type="number" step="0.01" min="0" required></label>
+      <label class="req">IBAN pour le salaire<span class="en">IBAN for salary payment</span><span class="sk">IBAN na výplatu mzdy</span><input name="iban" required placeholder="SK.. .... .... .... .... ...."><span class="err" data-e="iban"></span></label>
+      <label>Banque et BIC/SWIFT (compte étranger)<span class="en">Bank and BIC/SWIFT (foreign account)</span><span class="sk">Banka a BIC/SWIFT (zahraničný účet)</span><input name="bic"></label>
     </div>
-    <p class="hint">Depuis le 1er avril 2026, l'IBAN de l'employé doit être indiqué à la Sociálna poisťovňa · Od 1. 4. 2026 sa IBAN zamestnanca uvádza Sociálnej poisťovni.</p>
+    <p class="hint">Depuis le 1er avril 2026, l'IBAN de l'employé doit être indiqué à la Sociálna poisťovňa · Since 1 April 2026 the employee's IBAN must be reported to Sociálna poisťovňa · Od 1. 4. 2026 sa IBAN zamestnanca uvádza Sociálnej poisťovni.</p>
   </fieldset>
 
-  <fieldset><legend>4 · Assurance santé · Zdravotné poistenie</legend>
+  <fieldset><legend>4 · Assurance santé · Health insurance · Zdravotné poistenie</legend>
     <div class="grid">
-      <label class="req">Caisse d'assurance santé<span class="sk">Zdravotná poisťovňa</span><select name="insurer" required><option value=""></option><option value="25">VšZP – Všeobecná zdravotná poisťovňa</option><option value="24">DÔVERA zdravotná poisťovňa</option><option value="27">Union zdravotná poisťovňa</option><option value="none">Aucune en Slovaquie · nie som poistený/á na Slovensku</option></select></label>
-      <label>Numéro d'assuré (étrangers)<span class="sk">Číslo poistenca (cudzinci)</span><input name="insNo"></label>
-    </div>
-  </fieldset>
-
-  <fieldset><legend>5 · Retraite et handicap · Dôchodok a zdravotné postihnutie</legend>
-    <div class="grid">
-      <label class="req">Épargne retraite II. pilier<span class="sk">Sporím v II. pilieri (DSS)</span><select name="dss" required><option value=""></option><option value="no">Non · nie</option><option value="yes">Oui · áno</option><option value="unknown">Je ne sais pas · neviem</option></select></label>
-      <label class="dss-only hidden">Société de gestion (DSS)<span class="sk">Dôchodková správcovská spoločnosť</span><input name="dssName"></label>
-      <label class="req">Pension perçue<span class="sk">Poberám dôchodok</span><select name="pension" required><option value=""></option><option value="none">Aucune · nie</option><option value="old">Retraite de vieillesse · starobný</option><option value="early">Retraite anticipée · predčasný starobný</option><option value="inv">Invalidité ≤ 70 % · invalidný do 70 %</option><option value="inv70">Invalidité > 70 % · invalidný nad 70 %</option></select></label>
-      <label class="pen-only hidden">Pension perçue depuis<span class="sk">Dôchodok od</span><input name="pensionSince" type="date"></label>
-      <label class="req">Carte de handicap ZŤP<span class="sk">Preukaz ZŤP</span><select name="ztp" required><option value=""></option><option value="no">Non · nie</option><option value="yes">Oui · áno</option></select></label>
-      <label>Épargne retraite III. pilier (cotisations versées par vous)<span class="sk">Príspevky na doplnkové dôchodkové sporenie (III. pilier)</span><select name="ddsIII"><option value="no">Non · nie</option><option value="yes">Oui · áno</option></select></label>
+      <label class="req">Caisse d'assurance santé<span class="en">Health insurer</span><span class="sk">Zdravotná poisťovňa</span><select name="insurer" required><option value=""></option><option value="25">VšZP – Všeobecná zdravotná poisťovňa (General Health Insurance)</option><option value="24">DÔVERA zdravotná poisťovňa</option><option value="27">Union zdravotná poisťovňa</option><option value="none">Aucune en Slovaquie · None in Slovakia · nie som poistený/á na Slovensku</option></select></label>
+      <label>Numéro d'assuré (étrangers)<span class="en">Insurance number (foreigners)</span><span class="sk">Číslo poistenca (cudzinci)</span><input name="insNo"></label>
     </div>
   </fieldset>
 
-  <fieldset><legend>6 · Impôt · Daň z príjmov</legend>
+  <fieldset><legend>5 · Retraite et handicap · Pension and disability · Dôchodok a zdravotné postihnutie</legend>
     <div class="grid">
-      <label class="req">Résident fiscal en Slovaquie<span class="sk">Daňový rezident SR</span><select name="taxRes" required><option value=""></option><option value="yes">Oui · áno</option><option value="no">Non · nie</option></select></label>
-      <label class="req">Autre employeur en même temps<span class="sk">Súčasne iný zamestnávateľ</span><select name="otherJob" required><option value=""></option><option value="no">Non · nie</option><option value="yes">Oui · áno</option></select></label>
-      <label class="req">Je demande l'abattement personnel (NČZD) chez cet employeur<span class="sk">Uplatňujem nezdaniteľnú časť základu dane u tohto zamestnávateľa</span><select name="nczd" required><option value=""></option><option value="yes">Oui · áno</option><option value="no">Non · nie</option></select></label>
-      <label>Autre employeur plus tôt cette année<span class="sk">Iný zamestnávateľ v tomto roku</span><select name="prevJob"><option value="no">Non · nie</option><option value="yes">Oui · áno</option></select></label>
+      <label class="req">Épargne retraite II. pilier<span class="en">II. pillar pension saving</span><span class="sk">Sporím v II. pilieri (DSS)</span><select name="dss" required><option value=""></option><option value="no">Non · No · nie</option><option value="yes">Oui · Yes · áno</option><option value="unknown">Je ne sais pas · I don't know · neviem</option></select></label>
+      <label class="dss-only hidden">Société de gestion (DSS)<span class="en">Pension fund company (DSS)</span><span class="sk">Dôchodková správcovská spoločnosť</span><input name="dssName"></label>
+      <label class="req">Pension perçue<span class="en">Pension received</span><span class="sk">Poberám dôchodok</span><select name="pension" required><option value=""></option><option value="none">Aucune · None · nie</option><option value="old">Retraite de vieillesse · Old-age pension · starobný</option><option value="early">Retraite anticipée · Early retirement pension · predčasný starobný</option><option value="inv">Invalidité ≤ 70 % · Disability ≤ 70 % · invalidný do 70 %</option><option value="inv70">Invalidité > 70 % · Disability > 70 % · invalidný nad 70 %</option></select></label>
+      <label class="pen-only hidden">Pension perçue depuis<span class="en">Pension received since</span><span class="sk">Dôchodok od</span><input name="pensionSince" type="date"></label>
+      <label class="req">Carte de handicap ZŤP<span class="en">ZŤP disability card</span><span class="sk">Preukaz ZŤP</span><select name="ztp" required><option value=""></option><option value="no">Non · No · nie</option><option value="yes">Oui · Yes · áno</option></select></label>
+      <label>Épargne retraite III. pilier (cotisations versées par vous)<span class="en">III. pillar pension saving (your own contributions)</span><span class="sk">Príspevky na doplnkové dôchodkové sporenie (III. pilier)</span><select name="ddsIII"><option value="no">Non · No · nie</option><option value="yes">Oui · Yes · áno</option></select></label>
     </div>
-    <p class="hint">L'abattement ne peut être demandé que chez un seul employeur · Nezdaniteľnú časť možno uplatniť len u jedného zamestnávateľa. Si vous avez eu un autre employeur cette année, apportez son certificat de revenus (potvrdenie o zdaniteľných príjmoch).</p>
   </fieldset>
 
-  <fieldset><legend>7 · Enfants (bonus fiscal) · Deti (daňový bonus)</legend>
+  <fieldset><legend>6 · Impôt · Income tax · Daň z príjmov</legend>
     <div class="grid">
-      <label class="req">Je demande le bonus fiscal pour enfants<span class="sk">Uplatňujem daňový bonus na deti</span><select name="bonus" required><option value=""></option><option value="no">Non / pas d'enfant · nie</option><option value="yes">Oui · áno</option></select></label>
+      <label class="req">Résident fiscal en Slovaquie<span class="en">Slovak tax resident</span><span class="sk">Daňový rezident SR</span><select name="taxRes" required><option value=""></option><option value="yes">Oui · Yes · áno</option><option value="no">Non · No · nie</option></select></label>
+      <label class="req">Autre employeur en même temps<span class="en">Another employer at the same time</span><span class="sk">Súčasne iný zamestnávateľ</span><select name="otherJob" required><option value=""></option><option value="no">Non · No · nie</option><option value="yes">Oui · Yes · áno</option></select></label>
+      <label class="req">Je demande l'abattement personnel (NČZD) chez cet employeur<span class="en">I claim the personal allowance (NČZD) with this employer</span><span class="sk">Uplatňujem nezdaniteľnú časť základu dane u tohto zamestnávateľa</span><select name="nczd" required><option value=""></option><option value="yes">Oui · Yes · áno</option><option value="no">Non · No · nie</option></select></label>
+      <label>Autre employeur plus tôt cette année<span class="en">Another employer earlier this year</span><span class="sk">Iný zamestnávateľ v tomto roku</span><select name="prevJob"><option value="no">Non · No · nie</option><option value="yes">Oui · Yes · áno</option></select></label>
     </div>
-    <p class="hint">Enfants de moins de 18 ans vivant avec vous · Deti do 18 rokov žijúce s vami v domácnosti.</p>
+    <p class="hint">L'abattement ne peut être demandé que chez un seul employeur · The allowance can be claimed with one employer only · Nezdaniteľnú časť možno uplatniť len u jedného zamestnávateľa. Si vous avez eu un autre employeur cette année, apportez son certificat de revenus (potvrdenie o zdaniteľných príjmoch). · If you had another employer this year, bring their income certificate.</p>
+  </fieldset>
+
+  <fieldset><legend>7 · Enfants (bonus fiscal) · Children (tax bonus) · Deti (daňový bonus)</legend>
+    <div class="grid">
+      <label class="req">Je demande le bonus fiscal pour enfants<span class="en">I claim the child tax bonus</span><span class="sk">Uplatňujem daňový bonus na deti</span><select name="bonus" required><option value=""></option><option value="no">Non / pas d'enfant · No / no children · nie</option><option value="yes">Oui · Yes · áno</option></select></label>
+    </div>
+    <p class="hint">Enfants de moins de 18 ans vivant avec vous · Children under 18 living with you · Deti do 18 rokov žijúce s vami v domácnosti.</p>
     <div id="kids"></div>
-    <button type="button" id="addKid" class="hidden">➕ Ajouter un enfant · Pridať dieťa</button>
+    <button type="button" id="addKid" class="hidden">➕ Ajouter un enfant · Add a child · Pridať dieťa</button>
   </fieldset>
 
-  <fieldset class="spouse-only hidden"><legend>8 · Conjoint (régularisation annuelle) · Manžel/ka (ročné zúčtovanie)</legend>
+  <fieldset class="spouse-only hidden"><legend>8 · Conjoint (régularisation annuelle) · Spouse (annual tax reconciliation) · Manžel/ka (ročné zúčtovanie)</legend>
     <div class="grid">
-      <label>Nom du conjoint<span class="sk">Meno a priezvisko</span><input name="spouseName"></label>
-      <label>Rodné číslo du conjoint<span class="sk">Rodné číslo</span><input name="spouseRc"></label>
-      <label>Le conjoint a-t-il ses propres revenus ?<span class="sk">Má manžel/ka vlastný príjem?</span><select name="spouseIncome"><option value=""></option><option value="no">Non · nie</option><option value="low">Faibles (moins de 5 400 € par an) · nízky</option><option value="yes">Oui · áno</option></select></label>
-      <label>Situation du conjoint<span class="sk">Situácia manžela/ky</span><select name="spouseSit"><option value=""></option><option value="none">Aucune particulière · žiadna</option><option value="child3">S'occupe d'un enfant de moins de 3 ans · stará sa o dieťa do 3 rokov</option><option value="carer">Aidant (príspevok na opatrovanie) · opatrovateľ</option><option value="unemployed">Demandeur d'emploi inscrit · evidovaný uchádzač</option><option value="disabled">Handicapé (ZŤP) · ZŤP</option></select></label>
+      <label>Nom du conjoint<span class="en">Spouse's name</span><span class="sk">Meno a priezvisko</span><input name="spouseName"></label>
+      <label>Rodné číslo du conjoint<span class="en">Spouse's rodné číslo</span><span class="sk">Rodné číslo</span><input name="spouseRc"></label>
+      <label>Le conjoint a-t-il ses propres revenus ?<span class="en">Does your spouse have own income?</span><span class="sk">Má manžel/ka vlastný príjem?</span><select name="spouseIncome"><option value=""></option><option value="no">Non · No · nie</option><option value="low">Faibles (moins de 5 400 € par an) · Low (under €5,400 a year) · nízky</option><option value="yes">Oui · Yes · áno</option></select></label>
+      <label>Situation du conjoint<span class="en">Spouse's situation</span><span class="sk">Situácia manžela/ky</span><select name="spouseSit"><option value=""></option><option value="none">Aucune particulière · Nothing particular · žiadna</option><option value="child3">S'occupe d'un enfant de moins de 3 ans · Caring for a child under 3 · stará sa o dieťa do 3 rokov</option><option value="carer">Aidant (príspevok na opatrovanie) · Carer · opatrovateľ</option><option value="unemployed">Demandeur d'emploi inscrit · Registered jobseeker · evidovaný uchádzač</option><option value="disabled">Handicapé (ZŤP) · Disabled (ZŤP) · ZŤP</option></select></label>
     </div>
-    <p class="hint">Ces réponses servent seulement à la régularisation annuelle de l'impôt, si vous la demandez · Len pre ročné zúčtovanie dane.</p>
+    <p class="hint">Ces réponses servent seulement à la régularisation annuelle de l'impôt, si vous la demandez · Only for the annual tax reconciliation, if you request it · Len pre ročné zúčtovanie dane.</p>
   </fieldset>
 
-  <fieldset><legend>9 · Déclaration et signature · Vyhlásenie a podpis</legend>
-    <label class="chk"><input type="checkbox" name="truth" required> <span><b>Je certifie que ces informations sont exactes et complètes et je signalerai tout changement sans délai.</b><br><i class="sk" style="color:var(--mut)">Vyhlasujem, že údaje sú pravdivé a úplné, a každú zmenu bezodkladne oznámim zamestnávateľovi.</i></span></label>
-    <label class="chk" style="margin-top:8px"><input type="checkbox" name="gdpr" required> <span><b>J'accepte que ces données soient utilisées par l'employeur uniquement pour la paie et les déclarations obligatoires.</b><br><i class="sk" style="color:var(--mut)">Súhlasím so spracovaním údajov zamestnávateľom len na účely mzdy a povinných hlásení.</i></span></label>
+  <fieldset><legend>9 · Déclaration et signature · Declaration and signature · Vyhlásenie a podpis</legend>
+    <label class="chk"><input type="checkbox" name="truth" required> <span><b>Je certifie que ces informations sont exactes et complètes et je signalerai tout changement sans délai.</b><br><span class="en2">I certify that this information is true and complete and I will report any change without delay.</span><br><i class="sk" style="color:var(--mut)">Vyhlasujem, že údaje sú pravdivé a úplné, a každú zmenu bezodkladne oznámim zamestnávateľovi.</i></span></label>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" name="gdpr" required> <span><b>J'accepte que ces données soient utilisées par l'employeur uniquement pour la paie et les déclarations obligatoires.</b><br><span class="en2">I agree that the employer uses this data only for payroll and mandatory reporting.</span><br><i class="sk" style="color:var(--mut)">Súhlasím so spracovaním údajov zamestnávateľom len na účely mzdy a povinných hlásení.</i></span></label>
     <div class="grid" style="margin-top:10px">
-      <label class="req">Lieu<span class="sk">Miesto</span><input name="place" value="Bratislava" required></label>
-      <label class="req">Date<span class="sk">Dátum</span><input name="date" type="date" required></label>
+      <label class="req">Lieu<span class="en">Place</span><span class="sk">Miesto</span><input name="place" value="Bratislava" required></label>
+      <label class="req">Date<span class="en">Date</span><span class="sk">Dátum</span><input name="date" type="date" required></label>
     </div>
-    <div class="sign"><div>Signature de l'employé · Podpis zamestnanca</div><div>Reçu par l'employeur (date, signature) · Prevzal zamestnávateľ</div></div>
-    <p class="hint">Pour l'abattement et le bonus enfants, l'employeur vous fera aussi signer le formulaire officiel « Vyhlásenie na uplatnenie nezdaniteľnej časti základu dane a daňového bonusu ».</p>
+    <div class="sign"><div>Signature de l'employé · Employee's signature · Podpis zamestnanca</div><div>Reçu par l'employeur · Received by the employer (date, signature) · Prevzal zamestnávateľ</div></div>
+    <p class="hint">Pour l'abattement et le bonus enfants, l'employeur vous fera aussi signer le formulaire officiel « Vyhlásenie na uplatnenie nezdaniteľnej časti základu dane a daňového bonusu ». · For the allowance and child bonus, you will also sign the official Slovak declaration form.</p>
   </fieldset>
   </form>
 
   <div class="bar">
-    <button class="pri" type="button" id="saveBtn">💾 Enregistrer la fiche · Uložiť</button>
-    <button type="button" onclick="window.print()">🖨 Imprimer pour signer · Tlačiť</button>
-    <button type="button" id="openBtn">📂 Rouvrir une fiche · Otvoriť</button><input type="file" id="openF" accept=".json" hidden>
-    <button type="button" class="x" id="clearBtn">Effacer · Vymazať</button>
+    <button class="pri" type="button" id="saveBtn">💾 Enregistrer · Save · Uložiť</button>
+    <button type="button" onclick="window.print()">🖨 Imprimer · Print · Tlačiť</button>
+    <button type="button" id="openBtn">📂 Rouvrir · Open · Otvoriť</button><input type="file" id="openF" accept=".json" hidden>
+    <button type="button" class="x" id="clearBtn">Effacer · Clear · Vymazať</button>
   </div>
   <div id="msg"></div>
 </main>
@@ -190,14 +193,14 @@ function check(showAll) {
   f.querySelectorAll('label').forEach(l => l.classList.remove('bad')); f.querySelectorAll('[data-e]').forEach(e => e.textContent = '');
   const bad = (n, msg) => { const el = f.elements[n]; if (el) { el.closest('label').classList.add('bad'); const e = f.querySelector(`[data-e="${n}"]`); if (e && msg) e.textContent = msg; } errs.push(msg || n); };
   f.querySelectorAll('[required]').forEach(el => { const l = el.closest('label'); if (l && l.offsetParent === null && el.type !== 'checkbox') return;
-    if (el.type === 'checkbox' ? !el.checked : !el.value.trim()) bad(el.name, (l ? l.childNodes[0].textContent.trim() : el.name) + ' : à remplir'); });
-  if (val('rc') && !rcOk(val('rc'))) bad('rc', 'Rodné číslo non valide · neplatné rodné číslo');
-  if (!val('rc') && !val('idDoc')) bad('rc', 'Indiquez le rodné číslo ou une pièce d\'identité');
-  if (val('iban') && !ibanOk(val('iban'))) bad('iban', 'IBAN non valide · neplatný IBAN');
-  if (val('zip') && !zipOk(val('zip'))) bad('zip', 'Code postal incomplet');
-  if (val('contract') === 'fixed' && !val('contractTo')) bad('contractTo', 'Fin du contrat à indiquer');
-  if (val('bonus') === 'yes') { if (!KIDS.length) errs.push('Bonus enfants : ajoutez au moins un enfant'); KIDS.forEach((k, i) => { if (!k.name || !k.birth) errs.push(`Enfant ${i + 1} : nom et date de naissance`); if (k.rc && !rcOk(k.rc)) errs.push(`Enfant ${i + 1} : rodné číslo non valide`); }); }
-  if (val('otherJob') === 'yes' && val('nczd') === 'yes') errs.push('Vous avez un autre employeur : vérifiez que l\'abattement n\'y est pas déjà demandé');
+    if (el.type === 'checkbox' ? !el.checked : !el.value.trim()) bad(el.name, (l ? l.childNodes[0].textContent.trim() + (l.querySelector('.en') ? ' · ' + l.querySelector('.en').textContent : '') : el.name) + ' : à remplir · required'); });
+  if (val('rc') && !rcOk(val('rc'))) bad('rc', 'Rodné číslo non valide · invalid · neplatné');
+  if (!val('rc') && !val('idDoc')) bad('rc', 'Indiquez le rodné číslo ou une pièce d\'identité · Give rodné číslo or an ID document');
+  if (val('iban') && !ibanOk(val('iban'))) bad('iban', 'IBAN non valide · invalid · neplatný');
+  if (val('zip') && !zipOk(val('zip'))) bad('zip', 'Code postal incomplet · incomplete postcode');
+  if (val('contract') === 'fixed' && !val('contractTo')) bad('contractTo', 'Fin du contrat à indiquer · contract end date required');
+  if (val('bonus') === 'yes') { if (!KIDS.length) errs.push('Bonus enfants : ajoutez au moins un enfant · add at least one child'); KIDS.forEach((k, i) => { if (!k.name || !k.birth) errs.push(`Enfant / child ${i + 1} : nom et date de naissance · name and date of birth`); if (k.rc && !rcOk(k.rc)) errs.push(`Enfant / child ${i + 1} : rodné číslo non valide · invalid`); }); }
+  if (val('otherJob') === 'yes' && val('nczd') === 'yes') errs.push('Vous avez un autre employeur : vérifiez que l\'abattement n\'y est pas déjà demandé · You have another employer: check the allowance is not claimed there too');
   return errs;
 }
 
@@ -212,9 +215,9 @@ function sync() {
 }
 function renderKids() {
   $('kids').innerHTML = KIDS.map((k, i) => `<div class="kid">
-    <label class="req">Prénom et nom<span class="sk">Meno a priezvisko</span><input data-k="name" data-i="${i}" value="${(k.name || '').replace(/"/g, '&quot;')}"></label>
-    <label class="req">Date de naissance<span class="sk">Dátum narodenia</span><input type="date" data-k="birth" data-i="${i}" value="${k.birth || ''}"></label>
-    <label>Rodné číslo<span class="sk">Rodné číslo</span><input data-k="rc" data-i="${i}" value="${(k.rc || '').replace(/"/g, '&quot;')}"></label>
+    <label class="req">Prénom et nom<span class="en">First name and surname</span><span class="sk">Meno a priezvisko</span><input data-k="name" data-i="${i}" value="${(k.name || '').replace(/"/g, '&quot;')}"></label>
+    <label class="req">Date de naissance<span class="en">Date of birth</span><span class="sk">Dátum narodenia</span><input type="date" data-k="birth" data-i="${i}" value="${k.birth || ''}"></label>
+    <label>Rodné číslo<span class="en">Birth number</span><span class="sk">Rodné číslo</span><input data-k="rc" data-i="${i}" value="${(k.rc || '').replace(/"/g, '&quot;')}"></label>
     <button type="button" class="x" data-del="${i}">✕</button></div>`).join('');
   $('kids').querySelectorAll('input').forEach(el => el.oninput = () => { KIDS[+el.dataset.i][el.dataset.k] = el.value.trim(); draft(); });
   $('kids').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { KIDS.splice(+b.dataset.del, 1); renderKids(); draft(); });
@@ -236,15 +239,15 @@ f.addEventListener('input', () => { sync(); draft(); }); f.addEventListener('cha
 function msg(t, ok) { const m = $('msg'); m.className = ok ? 'ok' : 'no'; m.innerHTML = t; m.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
 $('saveBtn').onclick = () => {
   const errs = check(true);
-  if (errs.length) { msg('<b>La fiche n\'est pas complète · Formulár nie je úplný :</b><ul style="margin:4px 0 0;padding-left:18px">' + errs.map(e => `<li>${e.replace(/</g, '&lt;')}</li>`).join('') + '</ul>', false); return; }
+  if (errs.length) { msg('<b>La fiche n\'est pas complète · The form is incomplete · Formulár nie je úplný :</b><ul style="margin:4px 0 0;padding-left:18px">' + errs.map(e => `<li>${e.replace(/</g, '&lt;')}</li>`).join('') + '</ul>', false); return; }
   const o = collect(), name = `${o.data.lastName}_${o.data.firstName}`.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '_');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(o, null, 1)], {type: 'application/json'}));
   a.download = `Fiche_${name}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  msg(`✓ Fiche enregistrée : <b>Fiche_${name}.json</b>. Remettez ce fichier au service de la paie (e-mail ou clé USB), puis imprimez la fiche et signez-la.<br><i>Súbor odovzdajte mzdovej učtárni a vytlačený formulár podpíšte.</i>`, true);
+  msg(`✓ Fiche enregistrée : <b>Fiche_${name}.json</b>. Remettez ce fichier au service de la paie (e-mail ou clé USB), puis imprimez la fiche et signez-la.<br>Form saved: send this file to the payroll office, then print and sign the form.<br><i>Súbor odovzdajte mzdovej učtárni a vytlačený formulár podpíšte.</i>`, true);
 };
 $('openBtn').onclick = () => $('openF').click();
-$('openF').onchange = e => { const file = e.target.files[0]; if (!file) return; file.text().then(t => { try { const o = JSON.parse(t); if (o.type !== FORM_TYPE) throw 0; fill(o); draft(); msg('Fiche rouverte · Formulár otvorený.', true); } catch (x) { msg('Ce fichier n\'est pas une fiche employé · Toto nie je formulár zamestnanca.', false); } }); e.target.value = ''; };
-$('clearBtn').onclick = () => { if (!confirm('Effacer toute la fiche ? · Vymazať formulár?')) return; f.reset(); KIDS = []; renderKids(); sync(); try { localStorage.removeItem(DRAFT); } catch (e) {} $('msg').className = ''; };
+$('openF').onchange = e => { const file = e.target.files[0]; if (!file) return; file.text().then(t => { try { const o = JSON.parse(t); if (o.type !== FORM_TYPE) throw 0; fill(o); draft(); msg('Fiche rouverte · Form opened · Formulár otvorený.', true); } catch (x) { msg('Ce fichier n\'est pas une fiche employé · Not an employee form · Toto nie je formulár zamestnanca.', false); } }); e.target.value = ''; };
+$('clearBtn').onclick = () => { if (!confirm('Effacer toute la fiche ? · Clear the whole form? · Vymazať formulár?')) return; f.reset(); KIDS = []; renderKids(); sync(); try { localStorage.removeItem(DRAFT); } catch (e) {} $('msg').className = ''; };
 try { const s = localStorage.getItem(DRAFT); if (s) fill(JSON.parse(s)); } catch (e) {}
 if (!val('date')) f.elements.date.value = new Date().toISOString().slice(0, 10);
 renderKids(); sync();
