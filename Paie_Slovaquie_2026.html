@@ -119,6 +119,8 @@
     <button onclick="saveFile()">💾 Enregistrer</button>
     <button onclick="document.getElementById('openf').click()">📂 Ouvrir</button>
     <input type="file" id="openf" accept=".json" hidden>
+    <button onclick="document.getElementById('ficheF').click()" title="Importer les fiches remplies par les employés (Fiche_….json) · Import osobných dotazníkov">📥 Importer fiches employés</button>
+    <input type="file" id="ficheF" accept=".json" multiple hidden>
     <button onclick="exportCSV()">📤 CSV du mois</button>
   </span>
   <span class="grp"><button class="pri" onclick="printSlips()">🖨 Imprimer les fiches</button>
@@ -371,6 +373,45 @@ $('openf').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   f.text().then(t => { try { const d = JSON.parse(t); if (!d.employees) throw 0; DB = {...DB, ...d, params: {...clone(P2026), ...(d.params || {})}}; save(); renderAll(); alert('Fichier ouvert.'); } catch (x) { alert('Fichier non valide.'); } });
   e.target.value = '';
+};
+
+// Import of the employee forms (Fiche_Employe.html → Fiche_<Nom>.json): creates the employee or updates the matching one
+function ficheToEmp(d, e) {
+  const name = [d.firstName, d.lastName].filter(Boolean).join(' ');
+  const addr = [d.street, [d.zip, d.city].filter(Boolean).join(' '), d.country && !/^slovensk|^slovaq|^sk$/i.test(d.country) ? d.country : ''].filter(Boolean).join(', ');
+  Object.assign(e, {name, addr, rc: d.rc || '', birth: d.birthDate || '', job: d.job || e.job, start: d.start || e.start,
+    iban: (d.iban || '').replace(/\s+/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim(), payType: 'net', net: num(d.net), hours: num(d.hours) || 40,
+    insurer: ['24', '25', '27'].includes(d.insurer) ? d.insurer : (e.insurer || '25'), health: d.insurer !== 'none',
+    dss: d.dss === 'yes', pension: PENS[d.pension] ? d.pension : 'none', ztp: d.ztp === 'yes', nczd: d.nczd !== 'no',
+    children: d.bonus === 'yes' ? (d.children || []).filter(k => k.birth).map(k => ({name: k.name || '', birth: k.birth, rc: k.rc || ''})) : [],
+    social: true, taxWithheld: true, active: true});
+  e.info = {title: d.title, birthName: d.birthName, sex: d.sex, birthPlace: d.birthPlace, nationality: d.nationality, idDoc: d.idDoc, marital: d.marital,
+    addrSk: d.addrSk, phone: d.phone, email: d.email, contract: d.contract, contractTo: d.contractTo, bic: d.bic, insNo: d.insNo, dssName: d.dssName,
+    pensionSince: d.pensionSince, ddsIII: d.ddsIII, taxRes: d.taxRes, otherJob: d.otherJob, prevJob: d.prevJob,
+    spouse: d.marital === 'married' ? {name: d.spouseName, rc: d.spouseRc, income: d.spouseIncome, sit: d.spouseSit} : null,
+    signed: {place: d.place, date: d.date, truth: !!d.truth, gdpr: !!d.gdpr}};
+  return e;
+}
+$('ficheF').onchange = ev => {
+  const files = [...ev.target.files]; ev.target.value = ''; if (!files.length) return;
+  Promise.all(files.map(f => f.text().then(t => ({f, t})))).then(list => {
+    const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const rcN = s => String(s || '').replace(/[\s/]/g, '');
+    const out = [];
+    list.forEach(({f, t}) => {
+      let o; try { o = JSON.parse(t); } catch (x) { out.push(`✗ ${f.name} : fichier illisible`); return; }
+      if (!o || o.type !== 'paie-sk-fiche-employe' || !o.data) { out.push(`✗ ${f.name} : ce n'est pas une fiche employé`); return; }
+      const d = o.data, full = norm(`${d.firstName} ${d.lastName}`), rev = norm(`${d.lastName} ${d.firstName}`);
+      let e = (rcN(d.rc) && DB.employees.find(x => rcN(x.rc) === rcN(d.rc)))
+        || DB.employees.find(x => [full, rev].includes(norm(x.name)))
+        || DB.employees.find(x => !x.rc && norm(x.name) === norm(d.firstName))        // employee entered earlier with the first name only (Seif…)
+        || ((c => c.length === 1 ? c[0] : null)(DB.employees.filter(x => !x.rc && norm(x.name).length >= 3 && norm(d.firstName).startsWith(norm(x.name)))));   // short name (Vero → Veronika)
+      const isNew = !e; if (isNew) e = blankEmp();
+      const oldNet = e.net; ficheToEmp(d, e); if (isNew) DB.employees.push(e);
+      out.push(`${isNew ? '➕ ajouté' : '✓ mis à jour'} : ${e.name} — net ${fmt(e.net)} €${!isNew && oldNet && oldNet !== e.net ? ` (avant ${fmt(oldNet)} €, à vérifier)` : ''}${e.children.length ? ` · ${e.children.length} enfant(s)` : ''}${d.nczd === 'no' ? ' · sans abattement (NČZD)' : ''}${d.taxRes === 'no' ? ' · ⚠ non résident fiscal' : ''}${d.insurer === 'none' ? ' · ⚠ pas d\'assurance santé SK' : ''}`);
+    });
+    save(); renderAll(); alert('Import des fiches employés\n\n' + out.join('\n'));
+  });
 };
 
 // ===================== calendar =====================
