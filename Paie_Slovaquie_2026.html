@@ -77,6 +77,10 @@
   .doc .part { margin: 10px 0 2px; padding: 4px 6px; background: var(--g); color: #fff; font-weight: bold; font-size: 12px; }
   .doc .part i { font-weight: normal; opacity: .85; } .doc td.no { width: 34px; font-weight: bold; color: var(--g); white-space: nowrap; }
   .doc td.en, .doc span.en { color: #555; font-style: italic; font-size: 10.5px; }
+  .doc .pay { border: 1.5px solid var(--g); border-radius: 6px; margin: 6px 0 10px; } .doc .pay table { margin: 0; } .doc .pay td:first-child { width: 30%; color: #444; }
+  .doc .step { margin: 12px 0 4px; font-size: 13px; font-weight: bold; color: var(--g); border-bottom: 1px solid var(--g); padding-bottom: 2px; }
+  .doc ol, .doc ul { margin: 4px 0 6px; padding-left: 20px; } .doc li { margin: 2px 0; }
+  .miss { background: #fde3e6; color: #8a1023; font-weight: bold; padding: 0 4px; border-radius: 3px; }
   .doc .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 28px; } .doc .sign div { border-top: 1px solid #000; padding-top: 3px; font-size: 10.5px; }
   @media print {
     @page { size: A4 portrait; margin: 8mm; }
@@ -87,8 +91,9 @@
     .slip:last-child { page-break-after: auto; break-after: auto; }
     body.printDecl section.tab { display: none !important; }
     body.printRZ section.tab { display: none !important; }
-    body.printRZ #tab-rz, body.printRZ #tab-pot, body.printRZ #tab-cert { display: block !important; }
-    body.printRZ #tab-rz .noprint, body.printRZ #tab-pot .noprint, body.printRZ #tab-cert .noprint, body.printRZ .doc:not(.go) { display: none !important; }
+    body.printRZ #tab-rz, body.printRZ #tab-pot, body.printRZ #tab-cert, body.printRZ #tab-guide { display: block !important; }
+    body.printRZ #tab-rz .noprint, body.printRZ #tab-pot .noprint, body.printRZ #tab-cert .noprint, body.printRZ #tab-guide .noprint, body.printRZ .doc:not(.go) { display: none !important; }
+    body.printRZ .doc .pay { break-inside: avoid; }
     body.printSim section.tab { display: none !important; } body.printSim #tab-sim { display: block !important; } body.printSim #tab-sim .noprint { display: none !important; }
     body.printSim .simblock { break-after: page; page-break-after: always; } body.printSim .simblock:last-child { break-after: auto; page-break-after: auto; }
     body.printSim .doc { border: 0; margin: 0; padding: 0; font-size: 9.5px; line-height: 1.25; max-width: none; }
@@ -128,6 +133,7 @@
   <button data-t="annee">📊 Récapitulatif annuel</button>
   <button data-t="rz">📑 Annual tax · Ročné zúčtovanie</button>
   <button data-t="pot">🧾 Tax confirmation · Potvrdenie</button>
+  <button data-t="guide">📘 Monthly guide</button>
   <button data-t="cert">📜 Work certificate · Potvrdenie o zamestnaní</button>
   <button data-t="sim">🧪 Simulation</button>
   <button data-t="param">⚙ Paramètres et sources</button>
@@ -205,6 +211,17 @@
     <div class="row"><button class="b pri" onclick="printRZ('potDoc')">🖨 Print · Tlačiť</button></div>
   </div>
   <div id="potDoc"></div>
+</section>
+
+<section class="tab" id="tab-guide">
+  <div class="noprint">
+    <h2>📘 Monthly guide: paying and declaring <span id="guideTitle"></span></h2>
+    <p class="note">Step-by-step instructions for the month chosen at the top, with the exact amounts, accounts, symbols and deadlines. Fill in the embassy's identifiers once; they are kept with the payroll data. Never store passwords here.</p>
+    <div class="card"><h3 style="margin-top:0">Embassy identifiers · Identifikátory zamestnávateľa</h3><div class="grid" id="guideIds"></div></div>
+    <div id="guideMissing"></div>
+    <div class="row"><button class="b pri" onclick="printRZ('guideDoc')">🖨 Print the guide · Tlačiť</button></div>
+  </div>
+  <div id="guideDoc"></div>
 </section>
 
 <section class="tab" id="tab-cert">
@@ -995,6 +1012,107 @@ function potDocHTML(e, y, A) {
 
 
 
+
+// ===================== monthly guide: paying and declaring, with the embassy's own identifiers =====================
+const IBAN_OK = v => /^SK\d{22}$/.test(String(v || '').replace(/\s+/g, ''));
+const ibanFmt = v => String(v || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
+function renderGuide() {
+  const E = DB.employer; E.ids = E.ids || {}; const I = E.ids;
+  const y = CUR.y, m = CUR.m, mm = String(m).padStart(2, '0'), R = periodResults(y, m);
+  $('guideTitle').textContent = `– ${MONTHS[m - 1]} ${y}`;
+  const used = [...new Set(R.filter(r => r.e.health).map(r => r.e.insurer))];
+  const fld = (k, en, sk, ph) => `<label>${en} · <span style="font-weight:normal">${sk}</span><input data-g="${k}" value="${esc(I[k] ?? '')}" placeholder="${ph || ''}"></label>`;
+  $('guideIds').innerHTML = `<label>Social insurance: variable symbol (10 digits) · VS Sociálnej poisťovne<input data-gx="sp" value="${esc(E.sp || '')}" placeholder="10 digits from the registration"></label>
+    ${fld('spIban', 'Social insurance: IBAN of the branch', 'IBAN pobočky Sociálnej poisťovne', 'SK.. from socpoist.sk / registration letter')}
+    ${Object.keys(INSURERS).map(c => fld('hiVs' + c, `${INSURERS[c].replace(/ \(.*\)/, '')}: payer number / VS`, 'číslo platiteľa / VS', used.includes(c) ? 'from the insurer' : 'only if an employee is insured there') +
+      fld('hiIban' + c, `${INSURERS[c].replace(/ \(.*\)/, '')}: IBAN`, 'IBAN poisťovne', used.includes(c) ? 'SK..' : '')).join('')}
+    <label>Tax: DIČ of the embassy · DIČ<input data-gx="dic" value="${esc(E.dic || '')}" placeholder="10 digits"></label>
+    ${fld('oud', 'Tax: personal tax account (OÚD)', 'osobný účet daňového subjektu', 'from the personal online zone')}
+    ${fld('taxIban', 'Tax: IBAN for tax advances (prefix 500259)', 'IBAN na preddavky (predčíslie 500259)', 'IBAN generator on financnasprava.sk')}
+    <label>Embassy bank account (pays everything) · Účet veľvyslanectva<input data-gx="bank" value="${esc(E.bank || '')}" placeholder="SK.."></label>`;
+  $('guideIds').querySelectorAll('[data-g]').forEach(i => i.onchange = () => { I[i.dataset.g] = i.value.trim(); save(); renderGuide(); });
+  $('guideIds').querySelectorAll('[data-gx]').forEach(i => i.onchange = () => { E[i.dataset.gx] = i.value.trim(); save(); renderGuide(); });
+  // what is still missing (embassy and employees)
+  const miss = [], need = (ok, txt) => { if (!ok) miss.push(txt); };
+  need(/^\d{10}$/.test(E.sp || ''), 'Social insurance variable symbol (10 digits)'); need(IBAN_OK(I.spIban), 'Social insurance IBAN');
+  used.forEach(c => { need(I['hiVs' + c], `${INSURERS[c]}: payer number / VS`); need(IBAN_OK(I['hiIban' + c]), `${INSURERS[c]}: IBAN`); });
+  need(E.dic, 'Embassy DIČ'); need(I.oud, 'Personal tax account (OÚD)'); need(IBAN_OK(I.taxIban), 'Tax IBAN (prefix 500259)'); need(IBAN_OK(E.bank), 'Embassy bank account IBAN');
+  [['spIban', I.spIban], ['taxIban', I.taxIban], ['bank', E.bank], ...used.map(c => ['hiIban' + c, I['hiIban' + c]])].forEach(([k, v]) => { if (v && !IBAN_OK(v)) miss.push(`${k}: not a valid Slovak IBAN (SK + 22 digits)`); });
+  const empMiss = DB.employees.filter(e => !e.end || parseISO(e.end) >= new Date(y, m - 1, 1)).map(e => {
+    const l = []; if (!e.rc) l.push('rodné číslo'); if (!e.birth) l.push('date of birth'); if (!e.start) l.push('start date'); if (!e.job) l.push('job'); if (!e.addr) l.push('address'); if (!e.iban) l.push('IBAN for the salary');
+    e.children.forEach(k => { if (/corriger|à corriger/i.test(k.name) || !k.rc) l.push(`child ${k.name ? '« ' + k.name + ' »' : ''}: real birth date and rodné číslo`); });
+    return l.length ? `<li><b>${esc(e.name)}</b>: ${l.map(esc).join(', ')}</li>` : '';
+  }).join('');
+  $('guideMissing').innerHTML = (miss.length || empMiss) ? `<div class="warn"><b>Still to fill in</b>${miss.length ? `<br>Embassy (fill in above): ${miss.map(esc).join(' · ')}` : ''}${empMiss ? `<br>Employees (Employés › Modifier):<ul style="margin:4px 0 0;padding-left:18px">${empMiss}</ul>` : ''}</div>` : '<div class="ok">✓ All identifiers and employee details are filled in.</div>';
+  // the month's figures
+  const S = f => round2(R.reduce((a, r) => a + f(r), 0)), pay = parseISO($('pPay').value), due = pay ? nextWorkday(pay) : null;
+  const repD = due ? nextWorkday(addDays(due, 3)) : null, taxD = due ? nextWorkday(addDays(due, 5)) : null, sumD = nextWorkday(new Date(y, m + 1, 0));
+  const fdd = d => d ? d.toLocaleDateString('en-GB', {weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'}) : '<span class="miss">set the pay date</span>';
+  const V = (v, label) => v ? esc(v) : `<span class="miss">${label} – to fill in</span>`;
+  const sp = S(r => r.eeS + r.erS), tx = S(r => r.adv - r.bonusT), net = S(r => r.net);
+  const box = rows => `<div class="pay"><table>${rows.map(([a, b]) => `<tr><td>${a}</td><td><b>${b}</b></td></tr>`).join('')}</table></div>`;
+  const hiBoxes = used.map(c => { const rs = R.filter(r => r.e.health && r.e.insurer === c), amt = round2(rs.reduce((a, r) => a + r.hEe + r.hEr, 0));
+    return `<p style="margin:6px 0 2px"><b>${esc(INSURERS[c])}</b> – ${rs.length} employee(s): ${rs.map(r => esc(r.e.name)).join(', ')}</p>` + box([
+      ['Beneficiary · Príjemca', esc(INSURERS[c])], ['IBAN', I['hiIban' + c] ? ibanFmt(I['hiIban' + c]) : V('', 'IBAN')], ['Amount · Suma', eur(amt)],
+      ['Variable symbol (VS)', V(I['hiVs' + c], 'payer number')], ['Specific symbol (ŠS)', `${y}${mm}`], ['Constant symbol (KS)', '3558'],
+      ['Due · Splatnosť', fdd(due)], ['Note for the bank · Správa', `Preddavky ZP ${mm}/${y}`]]); }).join('');
+  const T = (a, b) => `${a} <span class="en">· ${b}</span>`;
+  $('guideDoc').innerHTML = `<div class="doc">
+    <div class="hd"><div><h4>Monthly payroll guide · ${MONTHS_EN[m - 1]} ${y}</h4><span class="sk">Mesačný postup: mzdy, poistné a daň · ${MONTHS_SK[m - 1]} ${y}</span></div>
+      <div style="text-align:right"><b>${esc(E.name)}</b>${E.nameSk ? `<br><span class="sk">${esc(E.nameSk)}</span>` : ''}<br>Pay day · výplatný termín: <b>${pay ? pay.toLocaleDateString('en-GB') : '—'}</b></div></div>
+    <table><tr><th>Employees</th><th class="n">Net salaries</th><th class="n">Sociálna poisťovňa</th><th class="n">Health insurers</th><th class="n">Tax office</th><th class="n">Total cost</th></tr>
+      <tr><td>${R.length}</td><td class="n">${eur(net)}</td><td class="n">${eur(sp)}</td><td class="n">${eur(S(r => r.hEe + r.hEr))}</td><td class="n">${eur(Math.max(0, tx))}</td><td class="n"><b>${eur(S(r => r.cost))}</b></td></tr></table>
+
+    <div class="step">Step 1 – A few days before pay day: run the payroll</div>
+    <ol><li>Open the payroll program, choose <b>${MONTHS[m - 1]} ${y}</b> at the top and check the pay date (${pay ? pay.toLocaleDateString('fr-FR') : '—'}).</li>
+      <li>« Paie du mois »: enter any one-off bonus (net amount) or change; nothing else is needed for fixed nets.</li>
+      <li>« Fiches de paie »: print the payslips, have them signed, and give each employee theirs.</li>
+      <li>Keep this guide and the « Déclarations » sheet for the month's records.</li></ol>
+
+    <div class="step">Step 2 – ${fdd(pay)}: pay the net salaries</div>
+    <table><tr><th>Employee</th><th>IBAN</th><th class="n">Net</th></tr>${R.map(r => `<tr><td>${esc(r.e.name)}</td><td>${r.e.iban ? ibanFmt(r.e.iban) : '<span class="miss">IBAN – to fill in</span>'}</td><td class="n">${eur(r.net)}</td></tr>`).join('')}
+      <tr class="s"><td>Total</td><td></td><td class="n">${eur(net)}</td></tr></table>
+    <p class="en">From the embassy account ${E.bank ? ibanFmt(E.bank) : '<span class="miss">embassy IBAN – to fill in</span>'}; note « Mzda ${mm}/${y} ».</p>
+
+    <div class="step">Step 3 – ${fdd(due)}: Sociálna poisťovňa – send the report, then pay</div>
+    <ol><li>Log in to <b>e-Služby</b> (socpoist.sk › eSlužby) with the embassy's access (eID card or user name, password and mobile app).</li>
+      <li>Create the <b>Výkaz poistného a príspevkov (VPP)</b> for ${MONTHS_SK[m - 1]} ${y}: all employees, assessment base = gross pay of each (total ${eur(S(r => r.vzS))}). Check that the total equals the amount below, then <b>send it</b> no later than the due date.</li>
+      <li>Pay <b>one transfer</b> covering the employees' and the embassy's shares:</li></ol>
+    ${box([['Beneficiary · Príjemca', 'Sociálna poisťovňa'], ['IBAN', I.spIban ? ibanFmt(I.spIban) : V('', 'IBAN')], ['Amount · Suma', `${eur(sp)} <span class="en">(employees ${fmt(S(r => r.eeS))} + embassy ${fmt(S(r => r.erS))})</span>`],
+      ['Variable symbol (VS)', V(E.sp, '10-digit VS')], ['Specific symbol (ŠS)', `${mm}99${y}`], ['Constant symbol (KS)', '3118'], ['Due · Splatnosť', fdd(due)], ['Note for the bank · Správa', `Poistne ${mm}/${y}`]])}
+
+    <div class="step">Step 4 – ${fdd(due)}: health insurance – pay; report by ${fdd(repD)}</div>
+    ${hiBoxes || '<p>No employee in public health insurance this month.</p>'}
+    <ol><li>Pay each insurer on the due date (box above).</li>
+      <li>By <b>${fdd(repD)}</b>, send the <b>Mesačný výkaz preddavkov na poistné</b> for ${MONTHS_SK[m - 1]} ${y} to each insurer electronically (VšZP: ePobočka; Dôvera and Union: their payer portal). Each employee's assessment base is their gross pay.</li></ol>
+
+    <div class="step">Step 5 – ${fdd(taxD)}: tax office – pay the tax advances</div>
+    ${box([['Beneficiary · Príjemca', 'Daňový úrad (osobný účet daňového subjektu)'], ['IBAN', I.taxIban ? ibanFmt(I.taxIban) : V('', 'IBAN with prefix 500259')], ['Amount · Suma', `${eur(Math.max(0, tx))} <span class="en">(tax withheld ${fmt(S(r => r.adv))} − child bonus ${fmt(S(r => r.bonusT))})</span>`],
+      ['Variable symbol (VS)', `1100${mm}${y}`], ['Due · Splatnosť', `${fdd(taxD)} <span class="en">(5 days after pay day)</span>`], ['Note for the bank · Správa', `Preddavky dan ${mm}/${y}`]])}
+    ${tx < 0 ? '<p class="miss">Child bonuses exceed the tax withheld: nothing to pay; claim the difference in the monthly summary (step 6).</p>' : ''}
+
+    <div class="step">Step 6 – by ${fdd(sumD)}: monthly tax summary (prehľad)</div>
+    <ol><li>Log in to <b>financnasprava.sk › Osobná internetová zóna</b> with the embassy's access (eID / qualified e-signature or the electronic-delivery agreement).</li>
+      <li>Fill in and submit <b>PREHLADv26</b> – Prehľad o zrazených a odvedených preddavkoch na daň – for ${MONTHS_SK[m - 1]} ${y}, using these figures:</li></ol>
+    ${box([['Employees · Počet zamestnancov', String(R.length)], ['Taxable income paid · Úhrn príjmov', eur(S(r => r.gross + r.pn.comp))], ['Tax advances withheld · Zrazené preddavky', eur(S(r => r.adv))], ['Child tax bonus paid · Daňový bonus', eur(S(r => r.bonusT))], ['Paid to the tax office · Odvedené', eur(Math.max(0, tx))], ['DIČ', V(E.dic, 'DIČ')], ['Due · Lehota', fdd(sumD)]])}
+
+    <div class="step">Step 7 – close the month</div>
+    <ul><li>Tick each step in the « Déclarations et échéances » tab and keep the bank confirmations with this guide.</li>
+      <li>Click « Enregistrer » in the program to keep a copy of the data.</li></ul>
+
+    <div class="step">One-time setup (check once)</div>
+    <table>${[
+      ['Embassy registered as employer with Sociálna poisťovňa (registračný list zamestnávateľa) – gives the VS', /^\d{10}$/.test(E.sp || '')],
+      ['Access to Sociálna poisťovňa e-Služby', null],
+      ['Every employee registered with Sociálna poisťovňa before the first day of work (registračný list FO; employee IBAN required since 1 April 2026)', null],
+      ['Embassy registered as payer with each health insurer, with portal access (VšZP ePobočka…)', used.every(c => I['hiVs' + c])],
+      ['Embassy registered as tax withholder (platiteľ dane) – DIČ; electronic access to financnasprava.sk; OÚD known', !!(E.dic && I.oud)],
+      ['Payees saved in the embassy bank: Sociálna poisťovňa, each health insurer, tax office', !!(IBAN_OK(I.spIban) && IBAN_OK(I.taxIban) && used.every(c => IBAN_OK(I['hiIban' + c])))]
+    ].map(([t, ok]) => `<tr><td style="width:28px">${ok === true ? '✅' : ok === false ? '⬜' : '☐'}</td><td>${t}</td></tr>`).join('')}</table>
+    <p class="en" style="font-size:10px">Rules as of 2026: contributions due on the pay day (next working day if a weekend or holiday); tax advances within 5 days of pay day; monthly summary by the end of the following month. A wrong VS or ŠS can make a payment count for the wrong month – copy the symbols exactly.</p>
+  </div>`;
+}
+
 // ===================== work certificate on leaving (potvrdenie o zamestnaní, § 75 ods. 2 Zákonníka práce) =====================
 function renderCert() {
   const emps = DB.employees; DB.certs = DB.certs || {};
@@ -1265,6 +1383,7 @@ function renderAll() {
   if (on === 'tab-pot') renderPot();
   if (on === 'tab-sim') initSim();
   if (on === 'tab-cert') renderCert();
+  if (on === 'tab-guide') renderGuide();
   if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
 }
 load();
