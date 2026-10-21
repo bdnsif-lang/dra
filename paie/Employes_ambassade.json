@@ -98,7 +98,7 @@
  },
  "employees": [
   {
-   "id": "mviie7u6ewh2",
+   "id": "mviig9gd9n7z",
    "name": "Seif",
    "addr": "",
    "rc": "",
@@ -128,7 +128,7 @@
    "active": true
   },
   {
-   "id": "mviie7u7rpzw",
+   "id": "mviig9geahdy",
    "name": "Vero",
    "addr": "",
    "rc": "",
@@ -164,7 +164,7 @@
    "active": true
   },
   {
-   "id": "mviie7u7gsd1",
+   "id": "mviig9geibza",
    "name": "Riky",
    "addr": "",
    "rc": "",
@@ -194,7 +194,7 @@
    "active": true
   },
   {
-   "id": "mviie7u7cd9z",
+   "id": "mviig9geuey8",
    "name": "Sonia",
    "addr": "",
    "rc": "",
@@ -224,7 +224,7 @@
    "active": true
   },
   {
-   "id": "mviie7u74rhp",
+   "id": "mviig9gekml1",
    "name": "Adam",
    "addr": "",
    "rc": "",
@@ -254,7 +254,7 @@
    "active": true
   },
   {
-   "id": "mviie7u7q0w2",
+   "id": "mviig9geq3gt",
    "name": "Marie",
    "addr": "",
    "rc": "",
@@ -285,11 +285,56 @@
   }
  ],
  "periods": {
+  "2026-01": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-01-20"
+  },
+  "2026-02": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-02-20"
+  },
+  "2026-03": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-03-20"
+  },
+  "2026-04": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-04-20"
+  },
+  "2026-05": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-05-20"
+  },
+  "2026-06": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-06-20"
+  },
+  "2026-07": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-07-20"
+  },
+  "2026-08": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-08-20"
+  },
+  "2026-09": {
+   "inputs": {},
+   "done": {},
+   "payday": "2026-09-20"
+  },
   "2026-10": {
    "inputs": {},
    "done": {},
    "payday": "2026-10-20"
   }
  },
- "seedV": 2
+ "seedV": 3
 }
