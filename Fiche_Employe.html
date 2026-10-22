@@ -42,13 +42,26 @@
   body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20900%20600%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22450%22%20height%3D%22600%22%20fill%3D%22%23006233%22/%3E%3Crect%20x%3D%22450%22%20width%3D%22450%22%20height%3D%22600%22%20fill%3D%22%23fff%22/%3E%3Cmask%20id%3D%22m%22%3E%3Crect%20width%3D%22900%22%20height%3D%22600%22%20fill%3D%22%23fff%22/%3E%3Ccircle%20cx%3D%22487.5%22%20cy%3D%22300%22%20r%3D%22120%22%20fill%3D%22%23000%22/%3E%3C/mask%3E%3Ccircle%20cx%3D%22450%22%20cy%3D%22300%22%20r%3D%22150%22%20fill%3D%22%23d21034%22%20mask%3D%22url%28%23m%29%22/%3E%3Cpolygon%20points%3D%22465.0%2C300.0%20516.8%2C283.2%20516.8%2C228.7%20548.9%2C272.8%20600.7%2C255.9%20568.6%2C300.0%20600.7%2C344.1%20548.9%2C327.2%20516.8%2C371.3%20516.8%2C316.8%22%20fill%3D%22%23d21034%22/%3E%3C/svg%3E") center / cover no-repeat; opacity: .28; pointer-events: none; }
   html, body { background-color: #eef2ef; } body { position: relative; z-index: 0; }
   fieldset, .intro { background: rgba(255,255,255,.84); }
-  button { border-radius: 10px !important; padding: 9px 15px !important; font: 600 13.5px system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08);
-    transition: background .15s, box-shadow .15s, transform .08s; }
-  button:hover { background: #f1f8f4; box-shadow: 0 3px 10px rgba(0,98,51,.15); transform: translateY(-1px); }
-  button:active { transform: translateY(1px); }
-  button.pri { background: linear-gradient(180deg, #00843d, var(--g)); color: #fff; box-shadow: 0 3px 10px rgba(0,98,51,.3); }
-  button.pri:hover { background: linear-gradient(180deg, #029447, #00552c); }
-  button.x { background: #fff; } button.x:hover { background: #fff1f3; box-shadow: 0 3px 10px rgba(210,16,52,.15); }
+  /* futuristic glossy buttons */
+  button { position: relative; overflow: hidden; isolation: isolate; border: 0 !important; border-radius: 15px !important; padding: 10px 16px !important;
+    font: 600 13.5px "Segoe UI", system-ui, -apple-system, Arial, sans-serif !important; color: #1d5a47; background: linear-gradient(160deg, #ffffff 0%, #f0f7f4 55%, #dcebe4 100%);
+    box-shadow: inset 0 1px 1px #fff, inset 0 -2px 4px rgba(0,60,40,.12), 0 5px 12px rgba(0,60,40,.15), 0 1px 2px rgba(0,0,0,.1);
+    transition: transform .12s ease, box-shadow .2s ease, filter .2s ease; }
+  button::before { content: ''; position: absolute; left: 6%; right: 6%; top: 2px; height: 48%; border-radius: inherit; z-index: -1; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); }
+  button::after { content: ''; position: absolute; inset: 3px 10%; border-radius: 999px; z-index: -1; pointer-events: none; opacity: 0; transform: scale(.85);
+    background: radial-gradient(ellipse at 50% 35%, rgba(255,255,255,.45), rgba(255,255,255,.08) 60%, transparent 70%); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); transition: opacity .25s, transform .25s; }
+  button:hover { transform: translateY(-2px); filter: saturate(1.15) brightness(1.04); box-shadow: inset 0 1px 1px #fff, 0 9px 20px rgba(0,98,51,.22), 0 0 0 1px rgba(0,180,120,.3); }
+  button:hover::after { opacity: 1; transform: scale(1); }
+  button:active { transform: translateY(1px) scale(.97); box-shadow: inset 0 3px 8px rgba(0,60,40,.25), 0 1px 3px rgba(0,0,0,.1); }
+  button:active::before { opacity: .25; }
+  button:focus-visible { outline: 0; box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(0,229,255,.6) !important; }
+  button.pri { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.25); background: linear-gradient(160deg, #5ee0b0 0%, #1fb07f 45%, #0b7a52 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.7), inset 0 -3px 6px rgba(0,50,30,.3), 0 7px 16px rgba(16,150,100,.45); }
+  button.pri:hover { box-shadow: inset 0 1px 1px rgba(255,255,255,.8), 0 11px 24px rgba(16,170,110,.55), 0 0 18px rgba(60,230,170,.45); }
+  button.x { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.25); background: linear-gradient(160deg, #ffb07a 0%, #ff6a5b 45%, #d21034 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.7), inset 0 -3px 6px rgba(110,0,20,.3), 0 6px 14px rgba(230,60,70,.4); }
+  button.x:hover { box-shadow: inset 0 1px 1px rgba(255,255,255,.8), 0 10px 22px rgba(240,80,80,.55), 0 0 16px rgba(255,120,100,.45); }
   input, select, textarea { border-radius: 8px !important; } input:focus, select:focus { outline: 0 !important; box-shadow: 0 0 0 3px rgba(0,132,61,.18); }
   fieldset { border-radius: 14px !important; box-shadow: 0 4px 16px rgba(0,0,0,.05); }
   .credit { text-align: center; font-size: 12px; color: #33413a; padding: 14px 0 18px; letter-spacing: .5px; }
