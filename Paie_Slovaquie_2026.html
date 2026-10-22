@@ -81,6 +81,19 @@
   .doc .step { margin: 12px 0 4px; font-size: 13px; font-weight: bold; color: var(--g); border-bottom: 1px solid var(--g); padding-bottom: 2px; }
   .doc ol, .doc ul { margin: 4px 0 6px; padding-left: 20px; } .doc li { margin: 2px 0; }
   .miss { background: #fde3e6; color: #8a1023; font-weight: bold; padding: 0 4px; border-radius: 3px; }
+  /* search panel (🔍 in the top bar, Ctrl+K) */
+  #srch { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 30; width: min(640px, calc(100vw - 24px)); background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.25); padding: 10px; }
+  #srch .srchBox { display: flex; gap: 8px; }
+  #srchQ { flex: 1; padding: 9px 11px; font: 15px Arial, sans-serif; border: 2px solid var(--g2); border-radius: 6px; outline: none; }
+  #srchRes { max-height: min(62vh, 560px); overflow-y: auto; margin-top: 8px; }
+  #srchRes h5 { margin: 10px 4px 4px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mut); }
+  #srchRes .it { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 6px 8px; font: 13px Arial, sans-serif; color: var(--ink); cursor: pointer; }
+  #srchRes .it small { display: block; color: var(--mut); font-size: 11.5px; margin-top: 1px; }
+  #srchRes .it.sel, #srchRes .it:hover { background: var(--soft); outline: 1px solid #b9d3c3; }
+  #srchRes mark, .srchHit { background: #ffe58a; color: inherit; border-radius: 2px; }
+  #srchRes .none { color: var(--mut); font-size: 13px; padding: 8px; }
+  .srchHit { outline: 3px solid #f0c419; transition: background .6s, outline-color .6s; }
   .doc .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 28px; } .doc .sign div { border-top: 1px solid #000; padding-top: 3px; font-size: 10.5px; }
   /* Algerian flag in the background (screen only) */
   body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20900%20600%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22450%22%20height%3D%22600%22%20fill%3D%22%23006233%22/%3E%3Crect%20x%3D%22450%22%20width%3D%22450%22%20height%3D%22600%22%20fill%3D%22%23fff%22/%3E%3Cmask%20id%3D%22m%22%3E%3Crect%20width%3D%22900%22%20height%3D%22600%22%20fill%3D%22%23fff%22/%3E%3Ccircle%20cx%3D%22487.5%22%20cy%3D%22300%22%20r%3D%22120%22%20fill%3D%22%23000%22/%3E%3C/mask%3E%3Ccircle%20cx%3D%22450%22%20cy%3D%22300%22%20r%3D%22150%22%20fill%3D%22%23d21034%22%20mask%3D%22url%28%23m%29%22/%3E%3Cpolygon%20points%3D%22465.0%2C300.0%20516.8%2C283.2%20516.8%2C228.7%20548.9%2C272.8%20600.7%2C255.9%20568.6%2C300.0%20600.7%2C344.1%20548.9%2C327.2%20516.8%2C371.3%20516.8%2C316.8%22%20fill%3D%22%23d21034%22/%3E%3C/svg%3E") center / cover no-repeat; opacity: .28; pointer-events: none; }
@@ -173,7 +186,7 @@
   #login [hidden] { display: none !important; }
   #login .info { background: #f1f8f4; border: 1px solid #cfe3d7; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #2e4a3a; margin: 0 0 14px; }
   @media print {
-    body::before, .credit, #login { display: none !important; }
+    body::before, .credit, #login, #srch { display: none !important; }
     @page { size: A4 portrait; margin: 8mm; }
     html, body { background: #fff; }
     #bar, #tabs, section.tab:not(#tab-fiches), #tab-fiches .noprint { display: none !important; }
@@ -228,10 +241,16 @@
   </span>
   <span class="grp"><button class="pri" onclick="printSlips()">🖨 Imprimer les fiches</button>
     <button onclick="showTab('sim')" title="Full simulation for one employee from the net salary · Úplná simulácia pre jedného zamestnanca">🧪 Simulation</button></span>
+  <span class="grp"><button onclick="srchOpen()" title="Rechercher dans l'application (Ctrl+K) · Search · Hľadať">🔍 Rechercher · Search</button></span>
   <span id="saved" style="margin-left:auto;font-size:12px;opacity:.9"></span>
   <span class="grp"><span id="who" style="font-size:12px;opacity:.95"></span>
     <button class="ghost" onclick="authChange()" title="Changer l'identifiant ou le mot de passe · Change password">🔑</button>
     <button class="ghost" onclick="authLogout()" title="Se déconnecter · Log out">🔒 Déconnexion</button></span>
+</div>
+<div id="srch" hidden>
+  <div class="srchBox"><input id="srchQ" placeholder="Rechercher un employé, une page, un formulaire, un texte… · Search · Hľadať" autocomplete="off">
+    <button class="b" onclick="srchClose()" title="Fermer (Échap) · Close">✕</button></div>
+  <div id="srchRes"></div>
 </div>
 <nav id="tabs">
   <button data-t="emp" class="on">👥 Employés</button>
@@ -1883,6 +1902,118 @@ function renderAll() {
   if (on === 'tab-forms') renderForms();
   if (DB.params.year !== CUR.y && on !== 'tab-param') $('saved').textContent = `⚠ Paramètres légaux ${DB.params.year}, période ${CUR.y} : vérifiez-les`;
 }
+
+// ===================== search (🔍 in the top bar, Ctrl+K or « / »): employees, pages and actions, any text of the application =====================
+const srchNorm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const SRCH_RENDER = {paie: renderPaie, fiches: renderSlips, decl: renderDecl, annee: renderAnnee, rz: renderRZ, pot: renderPot, guide: renderGuide, cert: renderCert, forms: renderForms, param: renderParams};
+// pages and actions, with the words people may look for (FR · EN · SK)
+const SRCH_ACTIONS = [
+  ['emp', 'employés employees zamestnanci ajouter employé fiche employé osobný dotazník nouveau'],
+  ['paie', 'paie du mois salaire brut net prime bonus heures payroll mzda mzdy výpočet'],
+  ['fiches', 'fiches de paie bulletin payslip výplatná páska imprimer'],
+  ['decl', 'déclarations échéances cotisations sociálna poisťovňa zdravotná poisťovňa impôt deadlines odvody platby'],
+  ['annee', 'récapitulatif annuel annual summary ročný prehľad totaux'],
+  ['rz', 'ročné zúčtovanie régularisation annuelle annual tax reconciliation preplatok nedoplatok'],
+  ['pot', 'potvrdenie o zdaniteľných príjmoch certificat de revenus tax confirmation pot395'],
+  ['guide', 'monthly guide guide mensuel iban symbole variabilný symbol paiement payment'],
+  ['cert', 'certificat de travail work certificate potvrdenie o zamestnaní départ leaving'],
+  ['forms', 'formulaires officiels official forms úradné tlačivá prehlad prehladv26 hlasenie hlasenie v23 pot395v26 vyh36 vyhlásenie zia38 žiadosť pdf'],
+  ['sim', 'simulation simulácia net brut calcul'],
+  ['param', 'paramètres sources taux rates sadzby minimálna mzda salaire minimum jours fériés sviatky']
+].map(([t, k]) => ({kind: 'tab', t, k}));
+const SRCH_DO = [
+  ['💾 Enregistrer les données dans un fichier · Save to a file', 'enregistrer sauvegarder save uložiť backup json', () => saveFile()],
+  ['📂 Ouvrir un fichier de données · Open a file', 'ouvrir open otvoriť charger load json', () => $('openf').click()],
+  ['📤 CSV du mois · Monthly CSV', 'csv export excel', () => exportCSV()],
+  ['🖨 Imprimer les fiches de paie · Print payslips', 'imprimer print tlačiť fiches payslips', () => printSlips()],
+  ['⬇ PREHLADv26 du mois · Monthly tax summary (PDF)', 'prehlad prehladv26 prehľad pdf monthly summary', () => { showTab('forms'); ofDownload('prehlad'); }],
+  ['⬇ HLASENIEv23 de l\'année · Annual report (PDF)', 'hlasenie hlásenie annual report rapport annuel pdf', () => { showTab('forms'); ofDownload('hlasenie'); }],
+  ['📄 Fiche employé vierge · Blank employee form', 'fiche vierge blank employee form dotazník nouveau', () => downloadFiche(null)],
+  ['🔑 Changer le mot de passe · Change password', 'mot de passe password heslo changer change', () => authChange()],
+  ['🔒 Déconnexion · Log out', 'déconnexion logout odhlásiť', () => authLogout()]
+].map(([label, k, run]) => ({kind: 'do', label, k, run}));
+let SRCH = {items: [], sel: 0, text: []};
+// every line of every tab (tables, paragraphs, labels, headings), rendered once when the search opens
+function srchIndex() {
+  const on = (document.querySelector('section.tab.on') || {}).id;
+  Object.entries(SRCH_RENDER).forEach(([t, f]) => { if ('tab-' + t !== on) try { f(); } catch (e) {} });
+  const out = [], seen = new Set();
+  document.querySelectorAll('section.tab').forEach(sec => {
+    const t = sec.id.slice(4);
+    sec.querySelectorAll('h2, h3, h4, tr, p, li, label, .step, .warn, .ok, .part').forEach(el => {
+      if (el.closest('tr') && el.tagName !== 'TR' || el.tagName === 'LABEL' && el.querySelector('select')) return;   // a table row is one result; a list of options is not text
+      const txt = (el.tagName === 'TR' ? [...el.cells].map(c => c.textContent.trim()).filter(Boolean).join(' · ') : el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (txt.length < 2 || txt.length > 400) return;
+      const key = t + '|' + txt; if (seen.has(key)) return; seen.add(key);
+      out.push({t, txt, n: srchNorm(txt)});
+    });
+  });
+  SRCH.text = out;
+}
+const srchTabName = t => (document.querySelector(`#tabs button[data-t="${t}"]`) || {}).textContent || t;
+function srchMark(txt, q) {                                                       // the matched words highlighted, accents ignored
+  const n = srchNorm(txt), i = n.indexOf(q); if (i < 0) return esc(txt);
+  const from = Math.max(0, i - 60), to = Math.min(txt.length, i + q.length + 90);
+  return (from ? '…' : '') + esc(txt.slice(from, i)) + '<mark>' + esc(txt.slice(i, i + q.length)) + '</mark>' + esc(txt.slice(i + q.length, to)) + (to < txt.length ? '…' : '');
+}
+function srchRun() {
+  const raw = $('srchQ').value.trim(), q = srchNorm(raw), words = q.split(/\s+/).filter(Boolean), items = [];
+  if (!q) { $('srchRes').innerHTML = '<div class="none">Tapez un nom, un mot, un montant… · Type a name, a word, an amount… (Échap pour fermer)</div>'; SRCH.items = []; return; }
+  const all = s => words.every(w => s.includes(w));
+  const E = DB.employer;
+  if (all(srchNorm([E.name, E.nameSk, E.addr, E.street, E.city, E.dic, E.ico, E.bank, E.tel, E.email, 'employeur employer zamestnávateľ ambassade'].join(' '))))
+    items.push({g: 'Employés · Employees', label: '🏛 ' + (E.name || 'Employeur'), sub: 'Employeur · Employer – ' + [E.addr, E.dic && 'DIČ ' + E.dic].filter(Boolean).join(' · '), run: () => { showTab('emp'); $('employerForm').scrollIntoView({block: 'center'}); }});
+  DB.employees.forEach(e => {
+    const hay = srchNorm([e.name, e.rc, e.job, e.addr, e.iban, e.birth, INSURERS[e.insurer], ...(e.children || []).map(k => k.name + ' ' + (k.rc || ''))].join(' '));
+    if (all(hay)) items.push({g: 'Employés · Employees', label: '👤 ' + (e.name || '(sans nom)'), sub: [e.job, e.payType === 'net' ? eur(e.net) + ' net' : '', e.rc && 'RČ ' + e.rc, e.active === false ? 'sorti' : ''].filter(Boolean).join(' · '),
+      run: () => { showTab('emp'); editEmp(e.id); setTimeout(() => $('empEdit').scrollIntoView({block: 'start'}), 50); }});
+  });
+  SRCH_ACTIONS.forEach(a => { const name = srchTabName(a.t); if (all(srchNorm(name + ' ' + a.k))) items.push({g: 'Pages', label: name, sub: 'Ouvrir la page · Open', run: () => showTab(a.t)}); });
+  SRCH_DO.forEach(a => { if (all(srchNorm(a.label + ' ' + a.k))) items.push({g: 'Actions', label: a.label, sub: '', run: a.run}); });
+  const hits = SRCH.text.filter(x => all(x.n));
+  hits.slice(0, 60).forEach(x => items.push({g: `Dans l'application · In the application (${hits.length})`, label: srchMark(x.txt, words[0]), html: 1, sub: srchTabName(x.t),
+    run: () => srchGoText(x.t, words)}));
+  SRCH.items = items; SRCH.sel = 0;
+  let g = '';
+  $('srchRes').innerHTML = items.length ? items.map((it, i) => (it.g !== g ? `<h5>${esc(g = it.g)}</h5>` : '') +
+    `<button class="it${i ? '' : ' sel'}" data-i="${i}">${it.html ? it.label : esc(it.label)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</button>`).join('') +
+    (hits.length > 60 ? `<div class="none">… ${hits.length - 60} autres · more – précisez la recherche · refine the search</div>` : '')
+    : `<div class="none">Aucun résultat pour « ${esc(raw)} » · No result</div>`;
+  $('srchRes').querySelectorAll('.it').forEach(b => b.onclick = () => srchPick(+b.dataset.i));
+}
+function srchPick(i) { const it = SRCH.items[i]; if (!it) return; srchClose(); it.run(); }
+// open the page, then scroll to the first line containing the words and highlight it
+function srchGoText(t, words) {
+  showTab(t);
+  setTimeout(() => {
+    const els = [...$('tab-' + t).querySelectorAll('h2, h3, h4, tr, p, li, label, .step, .warn, .ok, .part')];
+    const el = els.find(x => { const n = srchNorm(x.innerText || x.textContent); return words.every(w => n.includes(w)); });
+    if (!el) return;
+    el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.add('srchHit');
+    setTimeout(() => el.classList.remove('srchHit'), 2600);
+  }, 60);
+}
+function srchOpen() {
+  if (document.body.classList.contains('locked')) return;
+  $('srch').style.top = Math.round($('bar').getBoundingClientRect().bottom + 8) + 'px';
+  $('srch').hidden = false; srchIndex(); $('srchQ').focus(); $('srchQ').select(); srchRun();
+}
+function srchClose() { $('srch').hidden = true; }
+$('srchQ').oninput = srchRun;
+$('srchQ').onkeydown = ev => {
+  const bs = $('srchRes').querySelectorAll('.it');
+  if (ev.key === 'Escape') return srchClose();
+  if (ev.key === 'Enter') { ev.preventDefault(); return srchPick(SRCH.sel); }
+  if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp' || !bs.length) return;
+  ev.preventDefault(); SRCH.sel = (SRCH.sel + (ev.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length;
+  bs.forEach((b, i) => b.classList.toggle('sel', i === SRCH.sel)); bs[SRCH.sel].scrollIntoView({block: 'nearest'});
+};
+document.addEventListener('keydown', ev => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k' || ev.key === '/' && !typing) { ev.preventDefault(); srchOpen(); }
+  else if (ev.key === 'Escape' && !$('srch').hidden) srchClose();
+});
+document.addEventListener('mousedown', ev => { if (!$('srch').hidden && !$('srch').contains(ev.target) && !ev.target.closest('#bar')) srchClose(); });
 
 // ===================== access: user id + password =====================
 // The data kept in this browser is encrypted (AES-GCM) with a key derived from the password (PBKDF2-SHA-256).
