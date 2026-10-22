@@ -61,6 +61,7 @@
   </div>
 
   <form id="f" autocomplete="off" novalidate>
+  <input type="hidden" name="empId">
   <fieldset><legend>1 · Identité · Identity · Osobné údaje</legend>
     <div class="grid">
       <label class="req">Prénom<span class="en">First name</span><span class="sk">Meno</span><input name="firstName" required></label>
@@ -172,7 +173,9 @@
 </main>
 
 <script>
-const FORM_TYPE = 'paie-sk-fiche-employe', FORM_V = 1, DRAFT = 'ficheEmployeBrouillon';
+// PREFILL is set when the payroll program downloads this form for one employee (data already known + the employee's id)
+const PREFILL = window.FICHE_PREFILL || null;
+const FORM_TYPE = 'paie-sk-fiche-employe', FORM_V = 1, DRAFT = 'ficheEmployeBrouillon' + (PREFILL && PREFILL.empId ? '_' + PREFILL.empId : '');
 const f = document.getElementById('f'), $ = id => document.getElementById(id);
 const val = n => (f.elements[n] && f.elements[n].type === 'checkbox') ? f.elements[n].checked : (f.elements[n] ? f.elements[n].value.trim() : '');
 let KIDS = [];
@@ -246,9 +249,11 @@ $('saveBtn').onclick = () => {
   msg(`✓ Fiche enregistrée : <b>Fiche_${name}.json</b>. Remettez ce fichier au service de la paie (e-mail ou clé USB), puis imprimez la fiche et signez-la.<br>Form saved: send this file to the payroll office, then print and sign the form.<br><i>Súbor odovzdajte mzdovej učtárni a vytlačený formulár podpíšte.</i>`, true);
 };
 $('openBtn').onclick = () => $('openF').click();
-$('openF').onchange = e => { const file = e.target.files[0]; if (!file) return; file.text().then(t => { try { const o = JSON.parse(t); if (o.type !== FORM_TYPE) throw 0; fill(o); draft(); msg('Fiche rouverte · Form opened · Formulár otvorený.', true); } catch (x) { msg('Ce fichier n\'est pas une fiche employé · Not an employee form · Toto nie je formulár zamestnanca.', false); } }); e.target.value = ''; };
-$('clearBtn').onclick = () => { if (!confirm('Effacer toute la fiche ? · Clear the whole form? · Vymazať formulár?')) return; f.reset(); KIDS = []; renderKids(); sync(); try { localStorage.removeItem(DRAFT); } catch (e) {} $('msg').className = ''; };
-try { const s = localStorage.getItem(DRAFT); if (s) fill(JSON.parse(s)); } catch (e) {}
+$('openF').onchange = e => { const file = e.target.files[0]; if (!file) return; file.text().then(t => { try { const o = JSON.parse(t); if (o.type !== FORM_TYPE) throw 0; fill(o); if (PREFILL && PREFILL.empId) f.elements.empId.value = PREFILL.empId; draft(); msg('Fiche rouverte · Form opened · Formulár otvorený.', true); } catch (x) { msg('Ce fichier n\'est pas une fiche employé · Not an employee form · Toto nie je formulár zamestnanca.', false); } }); e.target.value = ''; };
+$('clearBtn').onclick = () => { if (!confirm('Effacer toute la fiche ? · Clear the whole form? · Vymazať formulár?')) return; f.reset(); KIDS = []; if (PREFILL) fill({data: PREFILL}); renderKids(); sync(); try { localStorage.removeItem(DRAFT); } catch (e) {} $('msg').className = ''; };
+let hadDraft = false; try { const s = localStorage.getItem(DRAFT); if (s) { fill(JSON.parse(s)); hadDraft = true; } } catch (e) {}
+if (!hadDraft && PREFILL) fill({data: PREFILL});
+if (PREFILL && PREFILL.empId) f.elements.empId.value = PREFILL.empId;
 if (!val('date')) f.elements.date.value = new Date().toISOString().slice(0, 10);
 renderKids(); sync();
 </script>
