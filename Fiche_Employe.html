@@ -38,7 +38,14 @@
   #msg.ok { display: block; background: #e9f5ee; border: 1px solid #b9d3c3; color: #0b6b35; }
   #msg.no { display: block; background: #fde3e6; border: 1px solid #f0b8c2; color: #8a1023; }
   .sign { display: none; }
+  /* Algerian flag in the background (screen only) */
+  body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20900%20600%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22450%22%20height%3D%22600%22%20fill%3D%22%23006233%22/%3E%3Crect%20x%3D%22450%22%20width%3D%22450%22%20height%3D%22600%22%20fill%3D%22%23fff%22/%3E%3Cmask%20id%3D%22m%22%3E%3Crect%20width%3D%22900%22%20height%3D%22600%22%20fill%3D%22%23fff%22/%3E%3Ccircle%20cx%3D%22487.5%22%20cy%3D%22300%22%20r%3D%22120%22%20fill%3D%22%23000%22/%3E%3C/mask%3E%3Ccircle%20cx%3D%22450%22%20cy%3D%22300%22%20r%3D%22150%22%20fill%3D%22%23d21034%22%20mask%3D%22url%28%23m%29%22/%3E%3Cpolygon%20points%3D%22465.0%2C300.0%20516.8%2C283.2%20516.8%2C228.7%20548.9%2C272.8%20600.7%2C255.9%20568.6%2C300.0%20600.7%2C344.1%20548.9%2C327.2%20516.8%2C371.3%20516.8%2C316.8%22%20fill%3D%22%23d21034%22/%3E%3C/svg%3E") center / cover no-repeat; opacity: .28; pointer-events: none; }
+  html, body { background-color: #eef2ef; } body { position: relative; z-index: 0; }
+  fieldset, .intro { background: rgba(255,255,255,.84); }
+  .credit { text-align: center; font-size: 12px; color: #33413a; padding: 14px 0 18px; letter-spacing: .5px; }
+  .credit b { color: #006233; }
   @media print {
+    body::before, .credit { display: none !important; }
     html, body { background: #fff; font-size: 11px; } header { background: #fff; color: #000; border-bottom: 2px solid #000; padding: 4px 0; }
     main { padding: 0; max-width: none; } .intro, .bar, #msg, button { display: none !important; }
     fieldset { border: 1px solid #999; margin: 6px 0; padding: 4px 8px 6px; break-inside: avoid; } input, select, textarea { border: 0; border-bottom: 1px solid #999; border-radius: 0; padding: 2px 0; font-size: 11px; }
@@ -171,6 +178,7 @@
   </div>
   <div id="msg"></div>
 </main>
+<footer class="credit">Réalisé par · Made by · Vytvoril <b>SEB</b></footer>
 
 <script>
 // PREFILL is set when the payroll program downloads this form for one employee (data already known + the employee's id)
